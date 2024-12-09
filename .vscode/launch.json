@@ -7,7 +7,7 @@
         {
             "cwd": "${workspaceRoot}",
             "executable": "${command:cmake.launchTargetPath}",
-            "name": "Debug with OpenOCD",
+            "name": "Debug F303RE with OpenOCD",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
@@ -17,7 +17,22 @@
             "searchDir": [],
             "runToEntryPoint": "main",
             "showDevDebugOutput": "none",
-            "svdFile": "${workspaceRoot}/STM32F303.svd"
+            "svdFile": "${workspaceRoot}/STM32/F303RE/STM32F303.svd"
+        },
+        {
+            "cwd": "${workspaceRoot}",
+            "executable": "${command:cmake.launchTargetPath}",
+            "name": "Debug G474RE with OpenOCD",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "configFiles": [
+                "board/st_nucleo_g4.cfg"
+            ],
+            "searchDir": [],
+            "runToEntryPoint": "main",
+            "showDevDebugOutput": "none",
+            "svdFile": "${workspaceRoot}/STM32/G474RE/STM32G474.svd"
         }
     ]
 }
