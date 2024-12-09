@@ -4,7 +4,10 @@
         {
             "label": "Flash",
             "type": "shell",
-            "command": "openocd -f board/st_nucleo_f3.cfg -c \"program ${command:cmake.launchTargetPath} verify\" -c \"reset halt\" -c shutdown",
+            "command": "openocd -f board/st_nucleo_f3.cfg -c \"program ${command:cmake.getLaunchTargetFilename} verify\" -c \"reset halt\" -c shutdown",
+            "options": {
+                "cwd": "${command:cmake.getLaunchTargetDirectory}",
+            },
             "problemMatcher": [],
             "dependsOn": [
                 "Build"
