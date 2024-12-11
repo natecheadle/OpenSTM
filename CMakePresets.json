@@ -1,0 +1,77 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "default",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {}
+        },
+        {
+            "name": "F303RE",
+            "cacheVariables": {
+                "PROCESSOR_VENDOR": "STM32",
+                "BOARD_NAME": "F303RE"
+            },
+            "toolchainFile": "${sourceDir}/STM32/F303RE/cmake/gcc-arm-none-eabi.cmake",
+            "hidden": true
+        },
+        {
+            "name": "G474RE",
+            "cacheVariables": {
+                "PROCESSOR_VENDOR": "STM32",
+                "BOARD_NAME": "G474RE"
+            },
+            "toolchainFile": "${sourceDir}/STM32/G474RE/cmake/gcc-arm-none-eabi.cmake",
+            "hidden": true
+        },
+        {
+            "name": "Debug",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            },
+            "hidden": true
+        },
+        {
+            "name": "RelWithDebInfo",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+            },
+            "hidden": true
+        },
+        {
+            "name": "Release",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            },
+            "hidden": true
+        },
+        {
+            "name": "MinSizeRel",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "MinSizeRel"
+            },
+            "hidden": true
+        },
+        {
+            "name": "F303RE-Debug",
+            "inherits": [
+                "Debug",
+                "F303RE"
+            ]
+        },
+        {
+            "name": "G474RE-Debug",
+            "inherits": [
+                "Debug",
+                "G474RE"
+            ]
+        }
+    ]
+}
+
