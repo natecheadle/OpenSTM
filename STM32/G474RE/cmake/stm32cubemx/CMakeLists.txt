@@ -4,62 +4,55 @@ project(stm32cubemx)
 add_library(stm32cubemx INTERFACE)
 
 # Enable CMake support for ASM and C languages
-enable_language(C ASM)
+enable_language(C CXX ASM)
 
-target_compile_definitions(stm32cubemx INTERFACE 
-	USE_NUCLEO_64 
-	USE_HAL_DRIVER 
-	STM32G474xx
-    $<$<CONFIG:Debug>:DEBUG>
-)
+target_compile_definitions(
+  stm32cubemx INTERFACE USE_NUCLEO_64 USE_HAL_DRIVER STM32G474xx
+                        $<$<CONFIG:Debug>:DEBUG>)
 
-target_include_directories(stm32cubemx INTERFACE
-    ../../Inc
-    ../../Drivers/STM32G4xx_HAL_Driver/Inc
-    ../../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy
-    ../../Drivers/BSP/STM32G4xx_Nucleo
-    ../../Drivers/CMSIS/Device/ST/STM32G4xx/Include
-    ../../Drivers/CMSIS/Include
-)
+target_include_directories(
+  stm32cubemx
+  INTERFACE ../../Inc
+            ../../Drivers/STM32G4xx_HAL_Driver/Inc
+            ../../Drivers/STM32G4xx_HAL_Driver/Inc/Legacy
+            ../../Drivers/BSP/STM32G4xx_Nucleo
+            ../../Drivers/CMSIS/Device/ST/STM32G4xx/Include
+            ../../Drivers/CMSIS/Include)
 
-target_sources(stm32cubemx INTERFACE
-    ../../Src/main.c
-    ../../Src/gpio.c
-    ../../Src/stm32g4xx_it.c
-    ../../Src/stm32g4xx_hal_msp.c
-    ../../Drivers/BSP/STM32G4xx_Nucleo/stm32g4xx_nucleo.c
-    ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal.c
-    ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_rcc.c
-    ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_rcc_ex.c
-    ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_flash.c
-    ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_flash_ex.c
-    ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_flash_ramfunc.c
-    ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_gpio.c
-    ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_exti.c
-    ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_dma.c
-    ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_dma_ex.c
-    ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_pwr.c
-    ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_pwr_ex.c
-    ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_cortex.c
-    ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_usart.c
-    ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_usart_ex.c
-    ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_uart_ex.c
-    ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_uart.c
-    ../../Src/system_stm32g4xx.c
-    ../../Src/sysmem.c
-    ../../Src/syscalls.c
-    ../../startup_stm32g474xx.s
-)
+target_sources(
+  stm32cubemx
+  INTERFACE ../../Src/main.cpp
+            ../../Src/gpio.c
+            ../../Src/stm32g4xx_it.c
+            ../../Src/stm32g4xx_hal_msp.c
+            ../../Drivers/BSP/STM32G4xx_Nucleo/stm32g4xx_nucleo.c
+            ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal.c
+            ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_rcc.c
+            ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_rcc_ex.c
+            ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_flash.c
+            ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_flash_ex.c
+            ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_flash_ramfunc.c
+            ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_gpio.c
+            ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_exti.c
+            ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_dma.c
+            ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_dma_ex.c
+            ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_pwr.c
+            ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_pwr_ex.c
+            ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_cortex.c
+            ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_usart.c
+            ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_usart_ex.c
+            ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_uart_ex.c
+            ../../Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_uart.c
+            ../../Src/system_stm32g4xx.c
+            ../../Src/sysmem.c
+            ../../Src/syscalls.c
+            ../../startup_stm32g474xx.s)
 
-target_link_directories(stm32cubemx INTERFACE
-)
+target_link_directories(stm32cubemx INTERFACE)
 
-target_link_libraries(stm32cubemx INTERFACE
-)
+target_link_libraries(stm32cubemx INTERFACE)
 
 # Validate that STM32CubeMX code is compatible with C standard
 if(CMAKE_C_STANDARD LESS 11)
-    message(ERROR "Generated code requires C11 or higher")
+  message(ERROR "Generated code requires C11 or higher")
 endif()
-
-
