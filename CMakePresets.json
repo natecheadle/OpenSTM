@@ -18,15 +18,6 @@
             "hidden": true
         },
         {
-            "name": "G474RE",
-            "cacheVariables": {
-                "PROCESSOR_VENDOR": "STM32",
-                "BOARD_NAME": "G474RE"
-            },
-            "toolchainFile": "${sourceDir}/STM32/G474RE/cmake/gcc-arm-none-eabi.cmake",
-            "hidden": true
-        },
-        {
             "name": "Debug",
             "inherits": "default",
             "cacheVariables": {
@@ -63,13 +54,6 @@
             "inherits": [
                 "Debug",
                 "F303RE"
-            ]
-        },
-        {
-            "name": "G474RE-Debug",
-            "inherits": [
-                "Debug",
-                "G474RE"
             ]
         }
     ]
