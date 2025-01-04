@@ -22,17 +22,47 @@
         {
             "cwd": "${workspaceRoot}",
             "executable": "${command:cmake.launchTargetPath}",
-            "name": "Debug G474RE with OpenOCD",
+            "name": "Debug F334R8 with OpenOCD",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
             "configFiles": [
-                "board/st_nucleo_g4.cfg"
+                "board/st_nucleo_f3.cfg"
             ],
             "searchDir": [],
             "runToEntryPoint": "main",
             "showDevDebugOutput": "none",
-            "svdFile": "${workspaceRoot}/STM32/G474RE/STM32G474.svd"
+            "svdFile": "${workspaceRoot}/STM32/F334R8/STM32F3x4.svd"
+        },
+        {
+            "cwd": "${workspaceRoot}",
+            "executable": "${command:cmake.launchTargetPath}",
+            "name": "Debug F411RE with OpenOCD",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "configFiles": [
+                "board/st_nucleo_f4.cfg"
+            ],
+            "searchDir": [],
+            "runToEntryPoint": "main",
+            "showDevDebugOutput": "none",
+            "svdFile": "${workspaceRoot}/STM32/F411RE/STM32F411.svd"
+        },
+        {
+            "cwd": "${workspaceRoot}",
+            "executable": "${command:cmake.launchTargetPath}",
+            "name": "Debug F446RE with OpenOCD",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "configFiles": [
+                "board/st_nucleo_f4.cfg"
+            ],
+            "searchDir": [],
+            "runToEntryPoint": "main",
+            "showDevDebugOutput": "none",
+            "svdFile": "${workspaceRoot}/STM32/F446RE/STM32F446.svd"
         }
     ]
 }
