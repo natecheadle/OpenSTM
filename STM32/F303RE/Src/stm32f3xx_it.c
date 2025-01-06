@@ -204,4 +204,8 @@ void SysTick_Handler(void)
 
 /* USER CODE BEGIN 1 */
 
+uint32_t GetSysTickCounter(void) {
+  return systick_counter;
+}
+
 /* USER CODE END 1 */
