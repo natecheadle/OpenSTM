@@ -55,7 +55,13 @@
                 "Debug",
                 "F303RE"
             ]
+        },
+        {
+            "name": "F303RE-Release",
+            "inherits": [
+                "Release",
+                "F303RE"
+            ]
         }
     ]
 }
-
