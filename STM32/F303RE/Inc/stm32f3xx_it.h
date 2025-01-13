@@ -28,8 +28,6 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
-#include <stdint.h>
-
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -58,8 +56,6 @@ void DebugMon_Handler(void);
 void PendSV_Handler(void);
 void SysTick_Handler(void);
 /* USER CODE BEGIN EFP */
-
-uint32_t GetSysTickCounter(void);
 
 /* USER CODE END EFP */
 
