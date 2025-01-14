@@ -12,7 +12,6 @@
 #include "Vendor/STMicro/F3/IO/DigitalOut.h"
 #include "stm32f3xx.h"
 
-
 namespace {
 #define NVIC_PRIORITYGROUP_0                                   \
   ((uint32_t)0x00000007) /*!< 0 bit  for pre-emption priority, \
@@ -42,6 +41,9 @@ namespace openstm::hal::boards::nucleo64f303re {
 
 DigitalOut<stmicro::f3::DigitalOut> App::LED2 =
     DigitalOut(stmicro::f3::DigitalOut(PinID::Five, GPIOA));
+
+DigitalIn<stmicro::f3::DigitalIn> App::Button1 =
+    DigitalIn(stmicro::f3::DigitalIn(PinID::Thirteen, GPIOC));
 
 App::App(std::function<void()> update) : m_UpdateFunc(update) {}
 

@@ -20,7 +20,7 @@ class DigitalOut : public IDigitalOut {
 
   void Toggle() override;
 
-  DigitalState State() const override;
-  void State(DigitalState state) override;
+  DigitalState GetState() const override;
+  void SetState(DigitalState state) override;
 };
 }  // namespace openstm::hal::stmicro::f3

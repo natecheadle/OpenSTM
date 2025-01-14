@@ -21,7 +21,7 @@ class DigitalOut : public IDigitalOut {
 
   void Toggle() override { m_ConcreteDigitalOut.Toggle(); }
 
-  DigitalState State() const override { return m_ConcreteDigitalOut.State(); }
-  void State(DigitalState state) override { m_ConcreteDigitalOut.State(state); }
+  DigitalState GetState() const override { return m_ConcreteDigitalOut.GetState(); }
+  void SetState(DigitalState state) override { m_ConcreteDigitalOut.SetState(state); }
 };
 }  // namespace openstm::hal

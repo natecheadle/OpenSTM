@@ -34,12 +34,12 @@ void DigitalOut::Toggle() {
                     static_cast<uint32_t>(m_ID));
 }
 
-DigitalState DigitalOut::State() const {
+DigitalState DigitalOut::GetState() const {
   return static_cast<DigitalState>(LL_GPIO_IsOutputPinSet(
       const_cast<GPIO_TypeDef*>(m_GPIOx), static_cast<uint32_t>(m_ID)));
 }
 
-void DigitalOut::State(DigitalState state) {
+void DigitalOut::SetState(DigitalState state) {
   if (state == DigitalState::HIGH) {
     LL_GPIO_SetOutputPin(const_cast<GPIO_TypeDef*>(m_GPIOx),
                          static_cast<uint32_t>(m_ID));
