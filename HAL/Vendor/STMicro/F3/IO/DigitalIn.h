@@ -28,6 +28,7 @@ class DigitalIn : public IDigitalIn {
   ~DigitalIn() = default;
 
   PinID ID() const override;
+  void Initialize() override;
 
   DigitalState GetState() const override;
 

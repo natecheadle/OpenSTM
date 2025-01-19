@@ -9,26 +9,30 @@ namespace openstm::hal::stmicro::f3 {
 
 std::array<std::array<std::function<void()>, 1>, 16> DigitalIn::s_Callbacks;
 
-DigitalIn::DigitalIn(PinID id, GPIO_TypeDef* gpiox) : m_GPIOx(gpiox), m_ID(id) {
-  if (gpiox == GPIOC) {
+DigitalIn::DigitalIn(PinID id, GPIO_TypeDef* gpiox)
+    : m_GPIOx(gpiox), m_ID(id) {}
+
+PinID DigitalIn::ID() const { return m_ID; }
+
+void DigitalIn::Initialize() {
+  if (m_GPIOx == GPIOC) {
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOC);
-  } else if (gpiox == GPIOF) {
+  } else if (m_GPIOx == GPIOF) {
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOF);
-  } else if (gpiox == GPIOA) {
+  } else if (m_GPIOx == GPIOA) {
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
-  } else if (gpiox == GPIOB) {
+  } else if (m_GPIOx == GPIOB) {
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
   }
 
-  LL_GPIO_ResetOutputPin(gpiox, static_cast<uint32_t>(id));
+  LL_GPIO_ResetOutputPin(const_cast<GPIO_TypeDef*>(m_GPIOx),
+                         static_cast<uint32_t>(m_ID));
 
   LL_GPIO_InitTypeDef GPIO_InitStruct = {
-      static_cast<uint32_t>(id), LL_GPIO_MODE_INPUT, LL_GPIO_SPEED_FREQ_LOW,
-      LL_GPIO_OUTPUT_PUSHPULL,   LL_GPIO_PULL_NO,    0};
-  LL_GPIO_Init(gpiox, &GPIO_InitStruct);
+      static_cast<uint32_t>(m_ID), LL_GPIO_MODE_INPUT, LL_GPIO_SPEED_FREQ_LOW,
+      LL_GPIO_OUTPUT_PUSHPULL,     LL_GPIO_PULL_NO,    0};
+  LL_GPIO_Init(const_cast<GPIO_TypeDef*>(m_GPIOx), &GPIO_InitStruct);
 }
-
-PinID DigitalIn::ID() const { return m_ID; }
 
 DigitalState DigitalIn::GetState() const {
   return static_cast<DigitalState>(LL_GPIO_IsInputPinSet(

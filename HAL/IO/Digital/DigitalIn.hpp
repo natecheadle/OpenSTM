@@ -18,6 +18,7 @@ class DigitalIn : public IDigitalIn {
   ~DigitalIn() = default;
 
   PinID ID() const override { return m_ConcreteDigitalIn.ID(); }
+  void Initialize() override { m_ConcreteDigitalIn.Initialize(); }
 
   DigitalState GetState() const override {
     return m_ConcreteDigitalIn.GetState();
@@ -27,6 +28,8 @@ class DigitalIn : public IDigitalIn {
     return m_ConcreteDigitalIn.AttachToInterrupt(f);
   }
 
-  void RemoveInterrupt(int id) { m_ConcreteDigitalIn.RemoveInterrupt(id); }
+  void RemoveInterrupt(int id) override {
+    m_ConcreteDigitalIn.RemoveInterrupt(id);
+  }
 };
 }  // namespace openstm::hal

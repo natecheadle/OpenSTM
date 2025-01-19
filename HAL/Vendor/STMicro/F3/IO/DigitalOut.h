@@ -17,6 +17,7 @@ class DigitalOut : public IDigitalOut {
   ~DigitalOut() = default;
 
   PinID ID() const override;
+  void Initialize() override;
 
   void Toggle() override;
 
