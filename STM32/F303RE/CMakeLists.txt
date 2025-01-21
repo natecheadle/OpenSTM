@@ -32,7 +32,8 @@ project(${CMAKE_PROJECT_NAME})
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
 # Create an executable object type
-add_executable(${CMAKE_PROJECT_NAME} "Src/main.c")
+add_executable(${CMAKE_PROJECT_NAME} "Src/main.c" 
+"Src/stm32f3xx_it.c")
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
