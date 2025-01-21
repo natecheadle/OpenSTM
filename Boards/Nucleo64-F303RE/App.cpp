@@ -41,6 +41,9 @@ namespace openstm::hal::boards::nucleo64f303re {
 DigitalOut<stmicro::f3::DigitalOut> App::LED2 =
     DigitalOut(stmicro::f3::DigitalOut(PinID::Five, GPIOA));
 
+DigitalIn<stmicro::f3::DigitalIn> App::Button1 =
+    DigitalIn(stmicro::f3::DigitalIn(PinID::Thirteen, GPIOC));
+
 App::App(std::function<void()> update) : m_UpdateFunc(update) {}
 
 void App::Initialize() {
@@ -88,6 +91,7 @@ void App::ConfigSysClock() {
 
 void App::InitGPIO() {
   LED2.Initialize();
+  Button1.Initialize();
 }
 
 void App::InitUART() {
