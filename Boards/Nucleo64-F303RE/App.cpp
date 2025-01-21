@@ -10,8 +10,6 @@
 
 #include "IO/Digital/DigitalOut.hpp"
 #include "Vendor/STMicro/F3/IO/DigitalOut.h"
-#include "stm32f3xx.h"
-
 
 namespace {
 #define NVIC_PRIORITYGROUP_0                                   \
@@ -89,30 +87,7 @@ void App::ConfigSysClock() {
 }
 
 void App::InitGPIO() {
-  LL_EXTI_InitTypeDef EXTI_InitStruct = {0, 0, DISABLE, 0, 0};
-  /* USER CODE BEGIN MX_GPIO_Init_1 */
-  /* USER CODE END MX_GPIO_Init_1 */
-  /**/
-  /**/
-  LL_SYSCFG_SetEXTISource(LL_SYSCFG_EXTI_PORTC, LL_SYSCFG_EXTI_LINE13);
-
-  /**/
-  LL_GPIO_SetPinPull(B1_GPIO_Port, B1_Pin, LL_GPIO_PULL_NO);
-
-  /**/
-  LL_GPIO_SetPinMode(B1_GPIO_Port, B1_Pin, LL_GPIO_MODE_INPUT);
-
-  /**/
-  EXTI_InitStruct.Line_0_31 = LL_EXTI_LINE_13;
-  EXTI_InitStruct.Line_32_63 = LL_EXTI_LINE_NONE;
-  EXTI_InitStruct.LineCommand = ENABLE;
-  EXTI_InitStruct.Mode = LL_EXTI_MODE_IT;
-  EXTI_InitStruct.Trigger = LL_EXTI_TRIGGER_FALLING;
-  LL_EXTI_Init(&EXTI_InitStruct);
-
-  /**/
-  /* USER CODE BEGIN MX_GPIO_Init_2 */
-  /* USER CODE END MX_GPIO_Init_2 */
+  LED2.Initialize();
 }
 
 void App::InitUART() {
