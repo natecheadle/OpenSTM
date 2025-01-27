@@ -2,31 +2,32 @@
 
 #include <type_traits>
 
+#include "Driver.hpp"
 #include "IDigitalOut.h"
-#include "IO/Digital/PinID.h"
+#include "PinID.h"
 
 namespace openstm::hal {
 
 template <typename T>
-class DigitalOut : public IDigitalOut {
+class DigitalOut : public IDigitalOut, public Driver<T> {
   static_assert(std::is_base_of_v<IDigitalOut, T>,
                 "T must implement IDigitalOut");
-  T m_ConcreteDigitalOut;
 
  public:
-  DigitalOut(const T& digitalOut) : m_ConcreteDigitalOut(digitalOut) {}
+  DigitalOut(const T& digitalOut) : Driver<T>(digitalOut) {}
   ~DigitalOut() = default;
 
-  PinID ID() const override { return m_ConcreteDigitalOut.ID(); }
+  PinID ID() const override { return Driver<T>::Device().ID(); }
 
-  void Toggle() override { m_ConcreteDigitalOut.Toggle(); }
-  void Initialize() override { m_ConcreteDigitalOut.Initialize(); }
+  void Toggle() override { Driver<T>::Device().Toggle(); }
+  void Initialize() override { Driver<T>::Device().Initialize(); }
 
   DigitalState GetState() const override {
-    return m_ConcreteDigitalOut.GetState();
+    return Driver<T>::Device().GetState();
   }
+
   void SetState(DigitalState state) override {
-    m_ConcreteDigitalOut.SetState(state);
+    Driver<T>::Device().SetState(state);
   }
 };
 }  // namespace openstm::hal

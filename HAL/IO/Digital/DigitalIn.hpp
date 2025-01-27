@@ -1,35 +1,34 @@
 #pragma once
-
 #include <type_traits>
 
+#include "Driver.hpp"
 #include "IDigitalIn.h"
-#include "IO/Digital/PinID.h"
+#include "PinID.h"
 
 namespace openstm::hal {
 
 template <typename T>
-class DigitalIn : public IDigitalIn {
+class DigitalIn : public IDigitalIn, public Driver<T> {
   static_assert(std::is_base_of_v<IDigitalIn, T>,
                 "T must implement IDigitalIn");
-  T m_ConcreteDigitalIn;
 
  public:
-  DigitalIn(const T& digitalOut) : m_ConcreteDigitalIn(digitalOut) {}
+  DigitalIn(const T& digitalOut) : Driver<T>(digitalOut) {}
   ~DigitalIn() = default;
 
-  PinID ID() const override { return m_ConcreteDigitalIn.ID(); }
-  void Initialize() override { m_ConcreteDigitalIn.Initialize(); }
+  PinID ID() const override { return Driver<T>::Device().ID(); }
+  void Initialize() override { Driver<T>::Device().Initialize(); }
 
   DigitalState GetState() const override {
-    return m_ConcreteDigitalIn.GetState();
+    return Driver<T>::Device().GetState();
   }
 
   int AttachToInterrupt(std::function<void()> f) override {
-    return m_ConcreteDigitalIn.AttachToInterrupt(f);
+    return Driver<T>::Device().AttachToInterrupt(f);
   }
 
   void RemoveInterrupt(int id) override {
-    m_ConcreteDigitalIn.RemoveInterrupt(id);
+    Driver<T>::Device().RemoveInterrupt(id);
   }
 };
 }  // namespace openstm::hal

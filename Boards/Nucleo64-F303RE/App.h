@@ -23,7 +23,6 @@ class App : public hal::App {
   void Update() override;
 
  private:
-  void InitGPIO();
   void InitUART();
   void ConfigSysClock();
 };
