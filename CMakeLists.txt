@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 3.22)
 
 set(CMAKE_CXX_STANDARD 17)
 
+project(OpenSTM)
+
 # Enable CMake support for ASM and C languages
 enable_language(C CXX ASM)
-
-project(OpenSTM)
 
 add_subdirectory("HAL")
 add_subdirectory("Boards")
