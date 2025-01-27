@@ -53,7 +53,8 @@ void App::Initialize() {
   NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_0);
 
   ConfigSysClock();
-  InitGPIO();
+  LED2.Initialize();
+  Button1.Initialize();
   InitUART();
 }
 
@@ -88,12 +89,6 @@ void App::ConfigSysClock() {
   LL_SetSystemCoreClock(72000000);
   LL_RCC_SetUSARTClockSource(LL_RCC_USART2_CLKSOURCE_PCLK1);
 }
-
-void App::InitGPIO() {
-  LED2.Initialize();
-  Button1.Initialize();
-}
-
 void App::InitUART() {
   /* USER CODE BEGIN USART2_Init 0 */
 

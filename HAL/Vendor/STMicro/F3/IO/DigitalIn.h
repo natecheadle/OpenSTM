@@ -1,7 +1,7 @@
 #pragma once
 
 #include "IO/Digital/IDigitalIn.h"
-#include "IO/Digital/PinID.h"
+#include "PinID.h"
 #include "stm32f303xe.h"
 
 #ifndef MAX_CALLBACKS_PER_PIN
