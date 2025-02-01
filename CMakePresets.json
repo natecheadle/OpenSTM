@@ -9,6 +9,22 @@
             "cacheVariables": {}
         },
         {
+            "name": "Desktop",
+            "cacheVariables": {
+                "EMBEDDED": "OFF",
+                "DESKTOP": "ON"
+            },
+            "hidden": true
+        },
+        {
+            "name": "Embedded",
+            "cacheVariables": {
+                "EMBEDDED": "ON",
+                "DESKTOP": "OFF"
+            },
+            "hidden": true
+        },
+        {
             "name": "F303RE",
             "cacheVariables": {
                 "PROCESSOR_VENDOR": "STM32",
@@ -19,7 +35,6 @@
         },
         {
             "name": "Debug",
-            "inherits": "default",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
             },
@@ -27,7 +42,6 @@
         },
         {
             "name": "RelWithDebInfo",
-            "inherits": "default",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo"
             },
@@ -35,7 +49,6 @@
         },
         {
             "name": "Release",
-            "inherits": "default",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
             },
@@ -43,15 +56,30 @@
         },
         {
             "name": "MinSizeRel",
-            "inherits": "default",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "MinSizeRel"
             },
             "hidden": true
         },
         {
+            "name": "Win",
+            "toolchainFile": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/vcpkg/scripts/buildsystems/vcpkg.cmake",
+            "hidden": true
+        },
+        {
+            "name": "Win-Desktop-Debug",
+            "inherits": [
+                "default",
+                "Desktop",
+                "Debug",
+                "Win"
+            ]
+        },
+        {
             "name": "F303RE-Debug",
             "inherits": [
+                "default",
+                "Embedded",
                 "Debug",
                 "F303RE"
             ]
@@ -59,6 +87,8 @@
         {
             "name": "F303RE-Release",
             "inherits": [
+                "default",
+                "Embedded",
                 "Release",
                 "F303RE"
             ]
