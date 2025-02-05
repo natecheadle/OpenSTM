@@ -38,5 +38,6 @@
 
 .DS_Store
 .cache
+.vs
 compile_commands.json
 .nvim.lua
