@@ -8,6 +8,6 @@ add_library(
   "Vendor/STMicro/F3/IO/DigitalIn.cpp" "Vendor/STMicro/F3/Serial/USART.cpp"
   "Vendor/STMicro/F3/Timer/SystemTimer.cpp")
 
-target_link_libraries(${PROJECT_NAME} stm32cubemx)
+target_link_libraries(${PROJECT_NAME} stm32cubemx OpenSTM_LIB)
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR})

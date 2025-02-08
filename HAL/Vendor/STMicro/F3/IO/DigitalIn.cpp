@@ -6,14 +6,31 @@
 #include <stm32f3xx_ll_system.h>
 
 #include <array>
+#include <cassert>
 #include <cstdint>
 
 namespace {
 using namespace openstm::hal;
 using namespace openstm::hal::stmicro::f3;
 
-std::array<std::array<std::function<void()>, MAX_CALLBACKS_PER_PIN>, 16>
-    s_Callbacks;
+std::array<DigitalIn*, 16> s_Inputs{{
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+}};
 
 static constexpr IRQn_Type idToIRQType(PinID id) {
   switch (id) {
@@ -123,22 +140,19 @@ static constexpr size_t idToIndex(PinID id) {
   }
 }
 
-int findAvailableCallback(PinID id) {
-  const size_t index{idToIndex(id)};
-  for (int i = 0; i < MAX_CALLBACKS_PER_PIN; ++i) {
-    if (!s_Callbacks[index][i]) {
-      return i;
-    }
-  }
-  return -1;
-}
-
 }  // namespace
 
 namespace openstm::hal::stmicro::f3 {
 
-DigitalIn::DigitalIn(PinID id, GPIO_TypeDef* gpiox)
-    : m_GPIOx(gpiox), m_ID(id) {}
+DigitalIn::DigitalIn(PinID id, GPIO_TypeDef* gpiox) : m_GPIOx(gpiox), m_ID(id) {
+  assert(s_Inputs[idToIndex(id)] == nullptr);
+  s_Inputs[idToIndex(id)] = this;
+}
+
+DigitalIn::DigitalIn(DigitalIn&& other) noexcept
+    : m_GPIOx(other.m_GPIOx), m_ID(other.m_ID) {
+  s_Inputs[idToIndex(m_ID)] = this;
+}
 
 PinID DigitalIn::ID() const { return m_ID; }
 
@@ -179,69 +193,56 @@ DigitalState DigitalIn::GetState() const {
       const_cast<GPIO_TypeDef*>(m_GPIOx), static_cast<uint32_t>(m_ID)));
 }
 
-int DigitalIn::AttachToInterrupt(std::function<void()> f) {
-  int id = findAvailableCallback(m_ID);
-  if (id >= 0 && id < MAX_CALLBACKS_PER_PIN) {
-    s_Callbacks[idToIndex(m_ID)][id] = std::move(f);
-  }
-  return id;
+IDigitalIn::StateChangedSub DigitalIn::AttachToInterrupt(
+    std::function<void(DigitalState)> f) {
+  return m_StateChangedEvent.Subscribe(std::move(f));
 }
 
-void DigitalIn::RemoveInterrupt(int id) {
-  if (id >= 0 && id < MAX_CALLBACKS_PER_PIN) {
-    s_Callbacks[idToIndex(m_ID)][id] = nullptr;
-  }
-}
-
+void DigitalIn::StateChanged() { m_StateChangedEvent.Invoke(GetState()); }
 }  // namespace openstm::hal::stmicro::f3
 
 extern "C" void EXTI0_IRQHandler() {
   LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_0);
 
-  for (const auto& f : s_Callbacks[idToIndex(PinID::Zero)]) {
-    if (f) {
-      f();
-    }
+  DigitalIn* pIn = s_Inputs[idToIndex(PinID::Zero)];
+  if (pIn) {
+    pIn->StateChanged();
   }
 }
 
 extern "C" void EXTI1_IRQHandler() {
   LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_1);
 
-  for (const auto& f : s_Callbacks[idToIndex(PinID::One)]) {
-    if (f) {
-      f();
-    }
+  DigitalIn* pIn = s_Inputs[idToIndex(PinID::One)];
+  if (pIn) {
+    pIn->StateChanged();
   }
 }
 
 extern "C" void EXTI2_TSC_IRQHandler() {
   LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_2);
 
-  for (const auto& f : s_Callbacks[idToIndex(PinID::Two)]) {
-    if (f) {
-      f();
-    }
+  DigitalIn* pIn = s_Inputs[idToIndex(PinID::Two)];
+  if (pIn) {
+    pIn->StateChanged();
   }
 }
 
 extern "C" void EXTI3_IRQHandler() {
   LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_3);
 
-  for (const auto& f : s_Callbacks[idToIndex(PinID::Three)]) {
-    if (f) {
-      f();
-    }
+  DigitalIn* pIn = s_Inputs[idToIndex(PinID::Three)];
+  if (pIn) {
+    pIn->StateChanged();
   }
 }
 
 extern "C" void EXTI4_IRQHandler() {
   LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_4);
 
-  for (const auto& f : s_Callbacks[idToIndex(PinID::Four)]) {
-    if (f) {
-      f();
-    }
+  DigitalIn* pIn = s_Inputs[idToIndex(PinID::Four)];
+  if (pIn) {
+    pIn->StateChanged();
   }
 }
 
@@ -249,50 +250,44 @@ extern "C" void EXTI9_5_IRQHandler() {
   if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_5) != RESET) {
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_5);
 
-    for (const auto& f : s_Callbacks[idToIndex(PinID::Five)]) {
-      if (f) {
-        f();
-      }
+    DigitalIn* pIn = s_Inputs[idToIndex(PinID::Five)];
+    if (pIn) {
+      pIn->StateChanged();
     }
   }
-
   if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_6) != RESET) {
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_6);
 
-    for (const auto& f : s_Callbacks[idToIndex(PinID::Six)]) {
-      if (f) {
-        f();
-      }
+    DigitalIn* pIn = s_Inputs[idToIndex(PinID::Six)];
+    if (pIn) {
+      pIn->StateChanged();
     }
   }
 
   if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_7) != RESET) {
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_7);
 
-    for (const auto& f : s_Callbacks[idToIndex(PinID::Seven)]) {
-      if (f) {
-        f();
-      }
+    DigitalIn* pIn = s_Inputs[idToIndex(PinID::Seven)];
+    if (pIn) {
+      pIn->StateChanged();
     }
   }
 
   if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_8) != RESET) {
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_8);
 
-    for (const auto& f : s_Callbacks[idToIndex(PinID::Eight)]) {
-      if (f) {
-        f();
-      }
+    DigitalIn* pIn = s_Inputs[idToIndex(PinID::Eight)];
+    if (pIn) {
+      pIn->StateChanged();
     }
   }
 
   if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_9) != RESET) {
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_9);
 
-    for (const auto& f : s_Callbacks[idToIndex(PinID::Nine)]) {
-      if (f) {
-        f();
-      }
+    DigitalIn* pIn = s_Inputs[idToIndex(PinID::Nine)];
+    if (pIn) {
+      pIn->StateChanged();
     }
   }
 }
@@ -301,58 +296,52 @@ extern "C" void EXTI15_10_IRQHandler(void) {
   if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_10) != RESET) {
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_10);
 
-    for (const auto& f : s_Callbacks[idToIndex(PinID::Ten)]) {
-      if (f) {
-        f();
-      }
+    DigitalIn* pIn = s_Inputs[idToIndex(PinID::Ten)];
+    if (pIn) {
+      pIn->StateChanged();
     }
   }
 
   if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_11) != RESET) {
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_11);
 
-    for (const auto& f : s_Callbacks[idToIndex(PinID::Eleven)]) {
-      if (f) {
-        f();
-      }
+    DigitalIn* pIn = s_Inputs[idToIndex(PinID::Eleven)];
+    if (pIn) {
+      pIn->StateChanged();
     }
   }
 
   if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_12) != RESET) {
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_12);
 
-    for (const auto& f : s_Callbacks[idToIndex(PinID::Twelve)]) {
-      if (f) {
-        f();
-      }
+    DigitalIn* pIn = s_Inputs[idToIndex(PinID::Twelve)];
+    if (pIn) {
+      pIn->StateChanged();
     }
   }
 
   if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_13) != RESET) {
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_13);
 
-    for (const auto& f : s_Callbacks[idToIndex(PinID::Thirteen)]) {
-      if (f) {
-        f();
-      }
+    DigitalIn* pIn = s_Inputs[idToIndex(PinID::Thirteen)];
+    if (pIn) {
+      pIn->StateChanged();
     }
   }
 
   if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_14) != RESET) {
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_14);
-    for (const auto& f : s_Callbacks[idToIndex(PinID::Fourteen)]) {
-      if (f) {
-        f();
-      }
+    DigitalIn* pIn = s_Inputs[idToIndex(PinID::Fourteen)];
+    if (pIn) {
+      pIn->StateChanged();
     }
   }
 
   if (LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_15) != RESET) {
     LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_15);
-    for (const auto& f : s_Callbacks[idToIndex(PinID::Fifteen)]) {
-      if (f) {
-        f();
-      }
+    DigitalIn* pIn = s_Inputs[idToIndex(PinID::Fifteen)];
+    if (pIn) {
+      pIn->StateChanged();
     }
   }
 }

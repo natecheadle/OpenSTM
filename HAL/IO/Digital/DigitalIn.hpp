@@ -13,7 +13,7 @@ class DigitalIn : public IDigitalIn, public Driver<T> {
                 "T must implement IDigitalIn");
 
  public:
-  DigitalIn(const T& digitalOut) : Driver<T>(digitalOut) {}
+  DigitalIn(T&& digitalOut) : Driver<T>(std::forward<T>(digitalOut)) {}
   ~DigitalIn() = default;
 
   PinID ID() const override { return Driver<T>::Device().ID(); }
@@ -23,12 +23,9 @@ class DigitalIn : public IDigitalIn, public Driver<T> {
     return Driver<T>::Device().GetState();
   }
 
-  int AttachToInterrupt(std::function<void()> f) override {
+  StateChangedSub AttachToInterrupt(
+      std::function<void(DigitalState)> f) override {
     return Driver<T>::Device().AttachToInterrupt(f);
-  }
-
-  void RemoveInterrupt(int id) override {
-    Driver<T>::Device().RemoveInterrupt(id);
   }
 };
 }  // namespace openstm::hal

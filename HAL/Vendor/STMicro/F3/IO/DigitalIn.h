@@ -1,12 +1,10 @@
 #pragma once
 
+#include <Event/Event.hpp>
+
 #include "IO/Digital/IDigitalIn.h"
 #include "PinID.h"
 #include "stm32f303xe.h"
-
-#ifndef MAX_CALLBACKS_PER_PIN
-#define MAX_CALLBACKS_PER_PIN 1
-#endif
 
 namespace openstm::hal::stmicro::f3 {
 
@@ -14,9 +12,16 @@ class DigitalIn : public IDigitalIn {
   const GPIO_TypeDef* const m_GPIOx;
   const PinID m_ID;
 
+  StateChangedEvent m_StateChangedEvent;
+
  public:
   DigitalIn(PinID id, GPIO_TypeDef* gpiox);
-  DigitalIn(const DigitalIn& other) = default;
+
+  DigitalIn(const DigitalIn& other) = delete;
+  DigitalIn& operator=(const DigitalIn& other) = delete;
+
+  DigitalIn(DigitalIn&& other) noexcept;
+  DigitalIn& operator=(DigitalIn&& other) noexcept = delete;
 
   ~DigitalIn() = default;
 
@@ -25,7 +30,9 @@ class DigitalIn : public IDigitalIn {
 
   DigitalState GetState() const override;
 
-  int AttachToInterrupt(std::function<void()> f) override;
-  void RemoveInterrupt(int id) override;
+  StateChangedSub AttachToInterrupt(
+      std::function<void(DigitalState)> f) override;
+
+  void StateChanged();
 };
 }  // namespace openstm::hal::stmicro::f3

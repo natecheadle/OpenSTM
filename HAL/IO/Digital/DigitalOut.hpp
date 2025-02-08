@@ -14,7 +14,7 @@ class DigitalOut : public IDigitalOut, public Driver<T> {
                 "T must implement IDigitalOut");
 
  public:
-  DigitalOut(const T& digitalOut) : Driver<T>(digitalOut) {}
+  DigitalOut(T&& digitalOut) : Driver<T>(std::forward<T>(digitalOut)) {}
   ~DigitalOut() = default;
 
   PinID ID() const override { return Driver<T>::Device().ID(); }
