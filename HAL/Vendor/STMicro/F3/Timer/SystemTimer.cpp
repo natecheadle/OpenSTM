@@ -6,26 +6,28 @@
 #include <stm32f3xx_ll_system.h>
 #include <stm32f3xx_ll_utils.h>
 
-#include <array>
 #include <atomic>
+#include <cassert>
 #include <chrono>
 
 namespace {
 std::atomic<std::uint32_t> sTickCount = 0;
 
-std::array<std::function<void(std::uint32_t)>, 2> s_Callbacks;
+openstm::hal::stmicro::f3::SystemTimer* pInstance = nullptr;
 
-int findAvailableCallback() {
-  for (int i = 0; i < static_cast<int>(s_Callbacks.size()); ++i) {
-    if (!s_Callbacks[i]) {
-      return i;
-    }
-  }
-  return -1;
-}
 }  // namespace
 
 namespace openstm::hal::stmicro::f3 {
+
+SystemTimer::SystemTimer() { assert(pInstance == nullptr); }
+
+SystemTimer::~SystemTimer() {
+  if (pInstance == this) {
+    pInstance = nullptr;
+  }
+}
+
+SystemTimer::SystemTimer(SystemTimer&&) noexcept { pInstance = this; }
 
 void SystemTimer::Initialize(std::chrono::microseconds tickPeriod) {
   m_PerTickTime = tickPeriod;
@@ -67,27 +69,17 @@ std::chrono::microseconds SystemTimer::MicroSecondsPerTick() const {
   return m_PerTickTime;
 }
 
-int SystemTimer::AttachToInterrupt(std::function<void(std::uint32_t)> f) {
-  int id = findAvailableCallback();
-  if (id >= 0) {
-    s_Callbacks[id] = std::move(f);
-  }
-  return id;
+ISystemTimer::TickOccurredSub SystemTimer::AttachToInterrupt(
+    std::function<void(std::uint32_t)> f) {
+  return m_TickOccurredEvent.Subscribe(std::move(f));
 }
 
-void SystemTimer::RemoveInterrupt(int id) {
-  if (id >= 0 && id <= static_cast<int>(s_Callbacks.size())) {
-    s_Callbacks[id] = nullptr;
-  }
+void SystemTimer::TickOccurred(std::uint32_t count) {
+  m_TickOccurredEvent.Invoke(count);
 }
-
 }  // namespace openstm::hal::stmicro::f3
 
 extern "C" void SysTick_Handler(void) {
   std::uint32_t ticks = ++sTickCount;
-  for (const auto& f : s_Callbacks) {
-    if (f) {
-      f(ticks);
-    }
-  }
+  pInstance->TickOccurred(ticks);
 }

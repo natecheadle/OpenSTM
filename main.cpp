@@ -14,7 +14,8 @@ namespace board = openstm::hal::boards::nucleo64f303re;
 openstm::hal::AppWrapper<board::App> App(board::App([]() { Update(); }));
 
 int main() {
-  board::App::Button1.AttachToInterrupt([]() { board::App::LED2.Toggle(); });
+  auto sub = board::App::Button1.AttachToInterrupt(
+      [](openstm::hal::DigitalState) { board::App::LED2.Toggle(); });
   App.Run();
 }
 

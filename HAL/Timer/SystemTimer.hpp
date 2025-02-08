@@ -15,7 +15,7 @@ class SystemTimer : public ISystemTimer, public Driver<T> {
                 "T must implement ISystemTimer");
 
  public:
-  SystemTimer(const T& timer) : Driver<T>(timer) {}
+  SystemTimer(T&& timer) : Driver<T>(std::forward<T>(timer)) {}
   ~SystemTimer() = default;
 
   void Initialize(std::chrono::microseconds tickPeriod) override {
@@ -30,10 +30,9 @@ class SystemTimer : public ISystemTimer, public Driver<T> {
     return Driver<T>::Device().MicroSecondsPerTick();
   }
 
-  int AttachToInterrupt(std::function<void(std::uint32_t)> f) override {
+  TickOccurredSub AttachToInterrupt(
+      std::function<void(std::uint32_t)> f) override {
     return AttachToInterrupt(std::move(f));
   }
-
-  void RemoveInterrupt(int id) override { RemoveInterrupt(id); }
 };
 }  // namespace openstm::hal

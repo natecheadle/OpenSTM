@@ -7,7 +7,7 @@ class Driver {
   T m_Device;
 
  public:
-  Driver(const T& device) : m_Device(device) {}
+  Driver(T&& device) : m_Device(std::forward<T>(device)) {}
 
   T& Device() { return m_Device; }
   const T& Device() const { return m_Device; }

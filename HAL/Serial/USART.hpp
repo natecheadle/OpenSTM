@@ -12,7 +12,7 @@ class USART : public IUSART, public Driver<T> {
   static_assert(std::is_base_of_v<IUSART, T>, "T must implement IUSART");
 
  public:
-  USART(const T& uart) : Driver<T>(uart) {}
+  USART(T&& uart) : Driver<T>(std::forward<T>(uart)) {}
   ~USART() = default;
 
   void Initialize() override { Driver<T>::Device().Initialize(); }
