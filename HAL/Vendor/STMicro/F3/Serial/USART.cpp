@@ -4,24 +4,79 @@
 #include <stm32f3xx_ll_gpio.h>
 #include <stm32f3xx_ll_usart.h>
 
-#include "../Timer/SystemTimer.h"
+#include <cassert>
+#include <cmath>
+
+namespace {
+openstm::hal::stmicro::f3::USART* pUSART1 = nullptr;
+openstm::hal::stmicro::f3::USART* pUSART2 = nullptr;
+openstm::hal::stmicro::f3::USART* pUSART3 = nullptr;
+}  // namespace
 
 namespace openstm::hal::stmicro::f3 {
 USART::USART(PinID txPin, PinID rxPin, GPIO_TypeDef* gpiox,
-             USART_TypeDef* usart, std::uint32_t baudRate,
-             const SystemTimer& timer)
+             USART_TypeDef* usart, std::uint32_t baudRate)
     : m_GPIOx(gpiox),
       m_USART(usart),
       m_TXPin(txPin),
       m_RXPin(rxPin),
-      m_BaudRate(baudRate),
-      m_SysTimer(timer) {}
+      m_BaudRate(baudRate) {
+  if (m_USART == USART1) {
+    pUSART1 = this;
+  } else if (m_USART == USART2) {
+    pUSART2 = this;
+  } else if (m_USART == USART3) {
+    pUSART3 = this;
+  }
+}
+
+USART::USART(USART&& other)
+    : m_GPIOx(other.m_GPIOx),
+      m_USART(other.m_USART),
+      m_TXPin(other.m_TXPin),
+      m_RXPin(other.m_RXPin),
+      m_BaudRate(other.m_BaudRate) {
+  if (m_USART == USART1) {
+    pUSART1 = this;
+  } else if (m_USART == USART2) {
+    pUSART2 = this;
+  } else if (m_USART == USART3) {
+    pUSART3 = this;
+  }
+}
 
 PinID USART::TXPin() const { return m_TXPin; }
 
 PinID USART::RXPin() const { return m_RXPin; }
 
 std::uint32_t USART::BaudRate() const { return m_BaudRate; }
+
+size_t USART::BufferedRxBytes() const { return m_RxBuffer.BufferedCount(); }
+
+size_t USART::BufferedTxBytes() const { return m_TxBuffer.BufferedCount(); }
+
+bool USART::IsRxIdle() const { return m_pActiveReceive == nullptr; }
+
+bool USART::IsTxIdle() const { return m_pActiveSend == nullptr; }
+
+void USART::EnableError(ErrorCode error) {
+  m_EnabledErrors[(size_t)error] = true;
+}
+
+void USART::EnableAllErrors() { m_EnabledErrors.set(); }
+
+void USART::DisableError(ErrorCode error) {
+  m_EnabledErrors[(size_t)error] = false;
+}
+
+void USART::DisableAllErrors() { m_EnabledErrors.reset(); }
+
+bool USART::IsErrorEnabled(ErrorCode error) {
+  return m_EnabledErrors[(size_t)error];
+}
+
+void USART::FlushRxBuffer() { m_RxBuffer.Clear(); }
+void USART::FlushTxBuffer() { m_TxBuffer.Clear(); }
 
 void USART::Initialize() {
   LL_USART_InitTypeDef USART_InitStruct = {};
@@ -32,10 +87,7 @@ void USART::Initialize() {
   LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART2);
 
   LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
-  /**USART2 GPIO Configuration
-  PA2   ------> USART2_TX
-  PA3   ------> USART2_RX
-  */
+
   GPIO_InitStruct.Pin =
       static_cast<std::uint32_t>(m_TXPin) | static_cast<std::uint32_t>(m_RXPin);
   GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
@@ -45,9 +97,22 @@ void USART::Initialize() {
   GPIO_InitStruct.Alternate = LL_GPIO_AF_7;
   LL_GPIO_Init(m_GPIOx, &GPIO_InitStruct);
 
-  /* USER CODE BEGIN USART2_Init 1 */
+  if (m_USART == USART1) {
+    NVIC_SetPriority(USART1_IRQn,
+                     NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
+    NVIC_EnableIRQ(USART1_IRQn);
+  }
+  if (m_USART == USART2) {
+    NVIC_SetPriority(USART2_IRQn,
+                     NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
+    NVIC_EnableIRQ(USART2_IRQn);
+  }
+  if (m_USART == USART3) {
+    NVIC_SetPriority(USART3_IRQn,
+                     NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
+    NVIC_EnableIRQ(USART3_IRQn);
+  }
 
-  /* USER CODE END USART2_Init 1 */
   USART_InitStruct.BaudRate = m_BaudRate;
   USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
   USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
@@ -59,42 +124,234 @@ void USART::Initialize() {
   LL_USART_DisableIT_CTS(m_USART);
   LL_USART_ConfigAsyncMode(m_USART);
   LL_USART_Enable(m_USART);
+
+  LL_USART_SetRxTimeout(m_USART, m_BaudRate);
+  LL_USART_EnableRxTimeout(m_USART);
+  LL_USART_ClearFlag_RTO(m_USART);
+  LL_USART_EnableIT_RTO(m_USART);
+  LL_USART_EnableIT_RXNE(m_USART);
 }
 
-void USART::SendBytes(const std::uint8_t* pData, std::size_t size) {
-  while (!LL_USART_IsActiveFlag_TXE(m_USART)) {
+IUSART::Result USART::SendBytes(const std::uint8_t* pData, std::size_t size) {
+  Result rslt{};
+  bool isComplete{false};
+  SendBytesAsync(pData, size, [&](Result sendRslt) {
+    rslt = sendRslt;
+    isComplete = true;
+  });
+  while (!isComplete) {
   }
+  return rslt;
+}
 
-  for (std::size_t i = 0; i < size; ++i) {
-    LL_USART_TransmitData8(m_USART, pData[i]);
-    while (!LL_USART_IsActiveFlag_TXE(m_USART)) {
+void USART::SendBytesAsync(
+    const std::uint8_t* pData, std::size_t size,
+    std::function<void(const Result&)> completionCallback) {
+  if (m_pActiveSend) {
+    if (completionCallback) {
+      completionCallback({ErrorCode::NotIdle});
+      return;
     }
   }
-  while (!LL_USART_IsActiveFlag_TC(m_USART)) {
+  size_t txSize{0};
+  for (size_t i = 0; i < size; ++i) {
+    if (!m_TxBuffer.Push(pData[i])) {
+      break;  // for()
+    }
+    ++txSize;
+  }
+
+  if (txSize == 0) {
+    if (completionCallback) {
+      completionCallback({});
+    }
+  }
+
+  m_ActiveSend = SendMessage{
+      .Size = txSize, .Sent = 0, .Callback = std::move(completionCallback)};
+  m_pActiveSend = &m_ActiveSend;
+
+  LL_USART_EnableIT_TXE(m_USART);
+}
+
+IUSART::Result USART::ReceiveBytes(std::uint8_t* pData, std::size_t maxSize,
+                                   std::uint32_t timeout) {
+  Result rslt;
+  bool isComplete{false};
+  ReceiveBytesAsync(pData, maxSize, timeout, [&](Result receiveRslt) {
+    rslt = receiveRslt;
+    isComplete = true;
+  });
+  while (!isComplete) {
+  }
+  return rslt;
+}
+
+void USART::ReceiveBytesAsync(
+    std::uint8_t* pData, std::size_t maxSize, std::uint32_t timeout,
+    std::function<void(const Result&)> completionCallback) {
+  Result rslt;
+
+  if (m_pActiveReceive) {
+    if (completionCallback) {
+      completionCallback({ErrorCode::NotIdle});
+      return;
+    }
+  }
+
+  if (m_RxBuffer.BufferedCount() >= maxSize) {
+    for (size_t i = 0; i < maxSize; ++i) {
+      std::uint8_t next{0};
+      m_RxBuffer.Pop(next);
+      pData[i] = next;
+    }
+    if (completionCallback) {
+      completionCallback({maxSize});
+    }
+  }
+
+  LL_USART_SetRxTimeout(m_USART, timeout);
+  LL_USART_EnableRxTimeout(m_USART);
+
+  m_ActiveReceive = ReceiveMessage{.Buffer = pData,
+                                   .BufferSize = maxSize,
+                                   .ReceivedSize = 0,
+                                   .Callback = std::move(completionCallback)};
+  m_pActiveReceive = &m_ActiveReceive;
+}
+
+void USART::HandleInterrupt() {
+  if (LL_USART_IsActiveFlag_RXNE(m_USART)) {
+    ReceiveByte(LL_USART_ReceiveData8(m_USART));
+  }
+
+  if (LL_USART_IsActiveFlag_RTO(m_USART)) {
+    LL_USART_ClearFlag_RTO(m_USART);
+    if (m_EnabledErrors[(size_t)ErrorCode::ReceiveTimeout]) {
+      HandleReceiveError(ErrorCode::ReceiveTimeout);
+    }
+  }
+
+  if (LL_USART_IsActiveFlag_TXE(m_USART)) {
+    TransmitDataEmpty();
+  }
+
+  if (LL_USART_IsActiveFlag_TC(m_USART)) {
+    LL_USART_ClearFlag_TC(m_USART);
+    TransmissionComplete();
+  }
+
+  if (LL_USART_IsActiveFlag_PE(m_USART)) {
+    LL_USART_ClearFlag_PE(m_USART);
+    if (m_EnabledErrors[(size_t)ErrorCode::Parity]) {
+      HandleReceiveError(ErrorCode::Parity);
+    }
+  }
+
+  if (LL_USART_IsActiveFlag_FE(m_USART)) {
+    LL_USART_ClearFlag_FE(m_USART);
+    if (m_EnabledErrors[(size_t)ErrorCode::Framing]) {
+      HandleReceiveError(ErrorCode::Framing);
+    }
+  }
+
+  if (LL_USART_IsActiveFlag_NE(m_USART)) {
+    LL_USART_ClearFlag_NE(m_USART);
+    if (m_EnabledErrors[(size_t)ErrorCode::NoiseDetected]) {
+      HandleReceiveError(ErrorCode::NoiseDetected);
+    }
+  }
+
+  if (LL_USART_IsActiveFlag_ORE(m_USART)) {
+    LL_USART_ClearFlag_ORE(m_USART);
+    if (m_EnabledErrors[(size_t)ErrorCode::Overrun]) {
+      HandleReceiveError(ErrorCode::Overrun);
+    }
   }
 }
 
-std::size_t USART::ReceiveBytes(std::uint8_t* pData, std::size_t maxSize,
-                                std::chrono::milliseconds timeout) {
-  std::size_t dataRead{0};
-  std::uint32_t initTick = m_SysTimer.TickCount();
-  std::chrono::microseconds usPerTick = m_SysTimer.MicroSecondsPerTick();
-
-  for (size_t i = 0; i < maxSize; ++i) {
-    std::chrono::microseconds waitTime{0};
-    bool timeoutOccurred = false;
-    while (!LL_USART_IsActiveFlag_RXNE(m_USART) && !timeoutOccurred) {
-      waitTime = usPerTick * ISystemTimer::CalculateTickDelta(
-                                 initTick, m_SysTimer.TickCount());
-      timeoutOccurred = waitTime > timeout;
+void USART::HandleReceiveError(ErrorCode code) {
+  if (m_pActiveReceive) {
+    if (m_pActiveReceive->Callback) {
+      m_pActiveReceive->Callback({code, m_pActiveReceive->ReceivedSize});
     }
-
-    if (timeoutOccurred) {
-      break;  // for
-    }
-    pData[i] = LL_USART_ReceiveData8(m_USART);
+    m_pActiveReceive = nullptr;
   }
-
-  return dataRead;
 }
+
+void USART::TransmitDataEmpty() {
+  std::uint8_t nextByte{0};
+  if (m_TxBuffer.Pop(nextByte)) {
+    LL_USART_TransmitData8(m_USART, nextByte);
+    if (m_pActiveSend) {
+      m_pActiveSend->Sent++;
+      if (m_pActiveSend->Sent == m_pActiveSend->Size) {
+        if (m_pActiveSend->Callback) {
+          m_pActiveSend->Callback({m_pActiveSend->Sent});
+        }
+        m_pActiveSend = nullptr;
+      }
+    }
+  }
+  if (m_TxBuffer.IsEmpty()) {
+    LL_USART_DisableIT_TXE(m_USART);
+  }
+}
+
+void USART::TransmissionComplete() {
+  LL_USART_DisableIT_TXE(m_USART);
+  LL_USART_DisableIT_TC(m_USART);
+}
+
+void USART::ReceiveByte(std::uint8_t nextByte) {
+  if (m_pActiveReceive) {
+    while (!m_RxBuffer.IsEmpty()) {
+      std::uint8_t next{0};
+      if (m_RxBuffer.Pop(next)) {
+        m_pActiveReceive->Buffer[m_pActiveReceive->ReceivedSize] = next;
+        m_pActiveReceive->ReceivedSize++;
+        if (m_pActiveReceive->ReceivedSize == m_pActiveReceive->BufferSize) {
+          m_RxBuffer.Push(nextByte);
+          if (m_pActiveReceive->Callback) {
+            m_pActiveReceive->Callback({m_pActiveReceive->BufferSize});
+          }
+          m_pActiveReceive = nullptr;
+          return;
+        }
+      }
+    }
+    m_pActiveReceive->Buffer[m_pActiveReceive->ReceivedSize] = nextByte;
+    m_pActiveReceive->ReceivedSize++;
+    if (m_pActiveReceive->ReceivedSize == m_pActiveReceive->BufferSize) {
+      if (m_pActiveReceive->Callback) {
+        m_pActiveReceive->Callback({m_pActiveReceive->BufferSize});
+      }
+      m_pActiveReceive = nullptr;
+      return;
+    }
+  } else {
+    m_RxBuffer.Push(nextByte);
+  }
+}
+
 }  // namespace openstm::hal::stmicro::f3
+
+extern "C" {
+void USART1_IRQHandler(void) {
+  if (pUSART1) {
+    pUSART1->HandleInterrupt();
+  }
+}
+
+void USART2_IRQHandler(void) {
+  if (pUSART2) {
+    pUSART2->HandleInterrupt();
+  }
+}
+
+void USART3_IRQHandler(void) {
+  if (pUSART3) {
+    pUSART3->HandleInterrupt();
+  }
+}
+}
