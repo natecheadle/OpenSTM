@@ -67,12 +67,26 @@
             "hidden": true
         },
         {
+            "name": "Mac",
+            "toolchainFile": "~/repos/vcpkg/scripts/buildsystems/vcpkg.cmake",
+            "hidden": true
+        },
+        {
             "name": "Win-Desktop-Debug",
             "inherits": [
                 "default",
                 "Desktop",
                 "Debug",
                 "Win"
+            ]
+        },
+        {
+            "name": "Mac-Desktop-Debug",
+            "inherits": [
+                "default",
+                "Desktop",
+                "Debug",
+                "Mac"
             ]
         },
         {
