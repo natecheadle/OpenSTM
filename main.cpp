@@ -21,8 +21,10 @@ int main() {
 
 void Update() {
   BUFFER.fill(0x00);
-  board::App::USB_USART.ReceiveBytes(BUFFER.data(), BUFFER.size(),
-                                     std::chrono::seconds(1));
+  board::App::USB_USART.DisableAllErrors();
+  board::App::USB_USART.EnableError(
+      openstm::hal::IUSART::ErrorCode::ReceiveTimeout);
+  board::App::USB_USART.ReceiveBytes(BUFFER.data(), BUFFER.size(), 10);
 
   auto end = std::find(BUFFER.begin(), BUFFER.end(), 0x00);
   size_t strLen = std ::distance(BUFFER.begin(), end);
