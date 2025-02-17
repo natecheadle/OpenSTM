@@ -8,11 +8,11 @@ project(OpenSTM)
 enable_language(C CXX ASM)
 
 add_subdirectory("Lib")
+add_subdirectory("HAL")
 
 if(EMBEDDED)
   add_compile_definitions(EMBEDDED)
 
-  add_subdirectory("HAL")
   add_subdirectory("Boards")
   add_subdirectory(${PROCESSOR_VENDOR})
 
