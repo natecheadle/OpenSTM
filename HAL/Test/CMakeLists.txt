@@ -11,3 +11,4 @@ add_executable(
 
 target_link_libraries(${PROJECT_NAME} PRIVATE GTest::gtest OpenSTM_HAL)
 gtest_add_tests(TARGET ${PROJECT_NAME})
+

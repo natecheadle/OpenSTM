@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.22)
 
+if(DESKTOP)
+  add_definitions("-D_WIN32_WINNT=0x0601")
+endif()
+
 set(CMAKE_CXX_STANDARD 20)
 
 project(OpenSTM)

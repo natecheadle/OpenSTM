@@ -1,27 +1,30 @@
 #include "SystemTimer.h"
 
 namespace openstm::hal::desktop {
-    
-SystemTimer::SystemTimer()
-    : m_Strand(boost::asio:g)
 
-  SystemTimer::~SystemTimer();
+SystemTimer::SystemTimer() {}
 
-  SystemTimer(const SystemTimer& other) = delete;
-  SystemTimer& operator=(const SystemTimer& other) = delete;
+void SystemTimer::Initialize(std::chrono::microseconds tickPeriod) {
+  m_PerTickTime = tickPeriod;
+  m_TimerThread = std::jthread([this]() {
+    boost::asio::chrono::microseconds waitTime{m_PerTickTime};
+    boost::asio::steady_timer timer(m_Context, waitTime);
+    timer.async_wait([this](const boost::system::error_code&) {
+      std::uint32_t tickCount = m_TickCount++;
+      m_TickOccurredEvent.Invoke(tickCount);
+    });
+    m_Context.run();
+  });
+}
 
-  SystemTimer::SystemTimer(SystemTimer&& other) noexcept;
-  SystemTimer& operator=(SystemTimer&& other) noexcept = delete;
+std::uint32_t SystemTimer::TickCount() const { return m_TickCount; }
 
-  static constexpr std::uint32_t ProcessorFrequncy = 72000000;
-  void SystemTimer::Initialize(std::chrono::microseconds tickPeriod) override;
+std::chrono::microseconds SystemTimer::MicroSecondsPerTick() const {
+  return m_PerTickTime;
+}
 
-  std::uint32_t SystemTimer::TickCount() const override;
-  std::chrono::microseconds SystemTimer::MicroSecondsPerTick() const override;
-
-  TickOccurredSub SystemTimer::AttachToInterrupt(
-      std::function<void(std::uint32_t)> f) override;
-
-  void SystemTimer::TickOccurred(std::uint32_t count);
-};
+ISystemTimer::TickOccurredSub SystemTimer::AttachToInterrupt(
+    std::function<void(std::uint32_t)> f) {
+  return m_TickOccurredEvent.Subscribe(std::move(f));
+}
 }  // namespace openstm::hal::desktop

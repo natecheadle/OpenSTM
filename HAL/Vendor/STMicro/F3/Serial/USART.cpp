@@ -45,38 +45,9 @@ USART::USART(USART&& other)
   }
 }
 
-PinID USART::TXPin() const { return m_TXPin; }
-
-PinID USART::RXPin() const { return m_RXPin; }
-
-std::uint32_t USART::BaudRate() const { return m_BaudRate; }
-
-size_t USART::BufferedRxBytes() const { return m_RxBuffer.BufferedCount(); }
-
-size_t USART::BufferedTxBytes() const { return m_TxBuffer.BufferedCount(); }
-
 bool USART::IsRxIdle() const { return m_pActiveReceive == nullptr; }
 
 bool USART::IsTxIdle() const { return m_pActiveSend == nullptr; }
-
-void USART::EnableError(ErrorCode error) {
-  m_EnabledErrors[(size_t)error] = true;
-}
-
-void USART::EnableAllErrors() { m_EnabledErrors.set(); }
-
-void USART::DisableError(ErrorCode error) {
-  m_EnabledErrors[(size_t)error] = false;
-}
-
-void USART::DisableAllErrors() { m_EnabledErrors.reset(); }
-
-bool USART::IsErrorEnabled(ErrorCode error) {
-  return m_EnabledErrors[(size_t)error];
-}
-
-void USART::FlushRxBuffer() { m_RxBuffer.Clear(); }
-void USART::FlushTxBuffer() { m_TxBuffer.Clear(); }
 
 void USART::Initialize() {
   LL_USART_InitTypeDef USART_InitStruct = {};
@@ -155,7 +126,7 @@ void USART::SendBytesAsync(
   }
   size_t txSize{0};
   for (size_t i = 0; i < size; ++i) {
-    if (!m_TxBuffer.Push(pData[i])) {
+    if (!TxBuffer().Push(pData[i])) {
       break;  // for()
     }
     ++txSize;
@@ -199,10 +170,10 @@ void USART::ReceiveBytesAsync(
     }
   }
 
-  if (m_RxBuffer.BufferedCount() >= maxSize) {
+  if (RxBuffer().BufferedCount() >= maxSize) {
     for (size_t i = 0; i < maxSize; ++i) {
       std::uint8_t next{0};
-      m_RxBuffer.Pop(next);
+      RxBuffer().Pop(next);
       pData[i] = next;
     }
     if (completionCallback) {
@@ -281,7 +252,7 @@ void USART::HandleReceiveError(ErrorCode code) {
 
 void USART::TransmitDataEmpty() {
   std::uint8_t nextByte{0};
-  if (m_TxBuffer.Pop(nextByte)) {
+  if (TxBuffer().Pop(nextByte)) {
     LL_USART_TransmitData8(m_USART, nextByte);
     if (m_pActiveSend) {
       m_pActiveSend->Sent++;
@@ -293,7 +264,7 @@ void USART::TransmitDataEmpty() {
       }
     }
   }
-  if (m_TxBuffer.IsEmpty()) {
+  if (TxBuffer().IsEmpty()) {
     LL_USART_DisableIT_TXE(m_USART);
   }
 }
@@ -305,13 +276,13 @@ void USART::TransmissionComplete() {
 
 void USART::ReceiveByte(std::uint8_t nextByte) {
   if (m_pActiveReceive) {
-    while (!m_RxBuffer.IsEmpty()) {
+    while (!RxBuffer().IsEmpty()) {
       std::uint8_t next{0};
-      if (m_RxBuffer.Pop(next)) {
+      if (RxBuffer().Pop(next)) {
         m_pActiveReceive->Buffer[m_pActiveReceive->ReceivedSize] = next;
         m_pActiveReceive->ReceivedSize++;
         if (m_pActiveReceive->ReceivedSize == m_pActiveReceive->BufferSize) {
-          m_RxBuffer.Push(nextByte);
+          RxBuffer().Push(nextByte);
           if (m_pActiveReceive->Callback) {
             m_pActiveReceive->Callback({m_pActiveReceive->BufferSize});
           }
@@ -330,7 +301,7 @@ void USART::ReceiveByte(std::uint8_t nextByte) {
       return;
     }
   } else {
-    m_RxBuffer.Push(nextByte);
+    RxBuffer().Push(nextByte);
   }
 }
 
