@@ -11,6 +11,7 @@ namespace openstm::hal::desktop {
 class SystemTimer : ISystemTimer {
   std::chrono::microseconds m_PerTickTime;
   boost::asio::io_context m_Context;
+  boost::asio::steady_timer m_Timer;
   std::jthread m_TimerThread;
   std::atomic<std::uint32_t> m_TickCount;
 
@@ -19,7 +20,7 @@ class SystemTimer : ISystemTimer {
  public:
   SystemTimer();
 
-  ~SystemTimer() = default;
+  ~SystemTimer();
 
   SystemTimer(const SystemTimer& other) = delete;
   SystemTimer& operator=(const SystemTimer& other) = delete;
@@ -34,5 +35,8 @@ class SystemTimer : ISystemTimer {
 
   TickOccurredSub AttachToInterrupt(
       std::function<void(std::uint32_t)> f) override;
+
+  private:
+  void TimeOut(const boost ::system::error_code& ec);
 };
 }  // namespace openstm::hal::desktop
