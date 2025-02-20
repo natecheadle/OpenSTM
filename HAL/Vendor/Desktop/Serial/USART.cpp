@@ -10,8 +10,20 @@ USART::USART(PinID txPin, PinID rxPin, std::uint32_t baudRate)
       m_TxWorkGuard(boost::asio::make_work_guard(m_TxContext)),
       m_RxWorkGuard(boost::asio::make_work_guard(m_RxContext)) {}
 
+USART::USART(USART&& other)
+    : USART_Base(std::forward<USART_Base>(other)),
+      m_TxWorkGuard(boost::asio::make_work_guard(m_TxContext)),
+      m_RxWorkGuard(boost::asio::make_work_guard(m_RxContext)) {}
+
+USART::~USART() {
+  m_TxContext.stop();
+  m_RxContext.stop();
+  m_TxThread.join();
+  m_RxThread.join();
+}
+
 void USART::Initialize() {
-  m_TxThread = std::jthread([this]() {
+  m_TxThread = std::thread([this]() {
     boost::asio::chrono::microseconds waitTime{
         static_cast<long long>(1.0 / BaudRate() * 1e6)};
     boost::asio::steady_timer timer(m_TxContext, waitTime);
@@ -24,7 +36,7 @@ void USART::Initialize() {
     m_TxContext.run();
   });
 
-  m_RxThread = std::jthread([this]() {
+  m_RxThread = std::thread([this]() {
     boost::asio::chrono::microseconds waitTime{
         static_cast<long long>(1.0 / BaudRate() * 1e6)};
     boost::asio::steady_timer timer(m_TxContext, waitTime);

@@ -1,17 +1,12 @@
 #pragma once
 
-#include <Event/Event.hpp>
 #include <Container/RingBuffer.hpp>
-#include <bitset>
-#include <span>
+#include <Event/Event.hpp>
 #include <boost/asio.hpp>
+#include <span>
 #include <thread>
 
 #include "Serial/USART_Base.h"
-
-#ifndef USART_BUFFER_SIZE
-#define USART_BUFFER_SIZE 32
-#endif
 
 namespace openstm::hal::desktop {
 
@@ -25,8 +20,8 @@ class USART : public USART_Base {
   boost::asio::executor_work_guard<boost::asio::io_context::executor_type>
       m_RxWorkGuard;
 
-  std::jthread m_TxThread;
-  std::jthread m_RxThread;
+  std::thread m_TxThread;
+  std::thread m_RxThread;
 
   std::future<void> m_TxFuture;
   std::future<void> m_RxFuture;
@@ -38,9 +33,9 @@ class USART : public USART_Base {
  public:
   USART(PinID txPin, PinID rxPin, std::uint32_t baudRate);
   USART(const USART& other) = delete;
-  USART(USART&& other) = default;
+  USART(USART&& other);
 
-  ~USART() = default;
+  ~USART();
 
   void Initialize() override;
 
@@ -63,6 +58,5 @@ class USART : public USART_Base {
   void InjectReceiveBytes(std::span<std::uint8_t> data);
   lib::Event<2, std::uint8_t>::Subscription SubscribeSentByte(
       std::function<void(std::uint8_t)> callback);
-
 };
 }  // namespace openstm::hal::desktop

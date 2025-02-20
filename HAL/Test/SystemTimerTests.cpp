@@ -1,7 +1,7 @@
 #include <Vendor/Desktop/Timer/SystemTimer.h>
-#include <thread>
-#include <chrono>
 #include <gtest/gtest.h>
+
+#include <chrono>
 
 namespace openstm::hal::desktop::test {
 class SystemTimerFixture : public testing::Test {
@@ -16,15 +16,27 @@ TEST_F(SystemTimerFixture, ValidateInitialState) {
   ASSERT_EQ(Timer.MicroSecondsPerTick(), TICK_PERIOD);
 }
 
-TEST_F(SystemTimerFixture, ValidateGetState) {
+TEST_F(SystemTimerFixture, ValidateTickFrequency) {
   std::uint32_t ticks{0};
-  std::uint32_t expectedTicks{100};
+  std::uint32_t expectedTicks{10};
   auto now = std::chrono::steady_clock::now();
-  auto sub = Timer.AttachToInterrupt([&](std::uint32_t) { ticks++; });
-  std::this_thread::sleep_until(
-      now + std::chrono::milliseconds(TICK_PERIOD.count() * expectedTicks));
+  auto end = std::chrono::steady_clock::now();
 
-  ASSERT_EQ(ticks, 100);
+  std::atomic<bool> completionFlag{false};
+  auto sub = Timer.AttachToInterrupt([&](std::uint32_t) {
+    ticks++;
+    if (ticks >= expectedTicks) {
+      end = std::chrono::steady_clock::now();
+      completionFlag = true;
+    }
+  });
+  while (!completionFlag) {
+    std::this_thread::yield();
+  }
+
+  std::chrono::milliseconds totalTime{
+      std::chrono::duration_cast<std::chrono::milliseconds>(end - now)};
+  ASSERT_EQ(totalTime, TICK_PERIOD * expectedTicks);
 }
 
 }  // namespace openstm::hal::desktop::test

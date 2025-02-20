@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
+
 project(OpenSTM_HAL_Test)
 
 include(GoogleTest)
@@ -11,4 +12,3 @@ add_executable(
 
 target_link_libraries(${PROJECT_NAME} PRIVATE GTest::gtest OpenSTM_HAL)
 gtest_add_tests(TARGET ${PROJECT_NAME})
-
