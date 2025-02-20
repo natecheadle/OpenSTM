@@ -15,7 +15,17 @@
             "runToEntryPoint": "main",
             "showDevDebugOutput": "none",
             "svdFile": "${workspaceRoot}/STM32/F303RE/STM32F303.svd"
+        },
+        {
+            "name": "C++ Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [],
+            "osx": {
+                "MIMode": "lldb",
+            },
+            "cwd": "${workspaceFolder}"
         }
     ]
 }
-

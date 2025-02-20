@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.22)
 
+if(DESKTOP)
+  add_definitions("-D_WIN32_WINNT=0x0601")
+endif()
+
 set(CMAKE_CXX_STANDARD 20)
 
 project(OpenSTM)
@@ -8,11 +12,11 @@ project(OpenSTM)
 enable_language(C CXX ASM)
 
 add_subdirectory("Lib")
+add_subdirectory("HAL")
 
 if(EMBEDDED)
   add_compile_definitions(EMBEDDED)
 
-  add_subdirectory("HAL")
   add_subdirectory("Boards")
   add_subdirectory(${PROCESSOR_VENDOR})
 
