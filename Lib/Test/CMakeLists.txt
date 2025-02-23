@@ -5,8 +5,9 @@ include(GoogleTest)
 
 find_package(GTest CONFIG REQUIRED)
 
-add_executable(${PROJECT_NAME} "main.cpp" "EventTests.cpp"
-                               "RingBufferTests.cpp")
+add_executable(
+  ${PROJECT_NAME} "main.cpp" "EventTests.cpp" "RingBufferTests.cpp"
+                  "StaticStackAllocatorTests.cpp")
 
 target_link_libraries(${PROJECT_NAME} PRIVATE GTest::gtest OpenSTM_LIB)
 gtest_add_tests(TARGET ${PROJECT_NAME})
