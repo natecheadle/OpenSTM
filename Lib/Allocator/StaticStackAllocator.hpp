@@ -54,11 +54,11 @@ class StaticStackAllocator {
 
   template <typename T>
   static T* allocate(size_t n, const void*) {
-    return allocate(n);
+    return allocate<T>(n);
   }
 
   template <typename T>
-  static void deallocate(T* obj, size_t size) {
+  static void deallocate(T* obj, size_t) {
     return Free(obj);
   }
 };

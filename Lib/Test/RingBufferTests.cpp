@@ -7,7 +7,7 @@ namespace openstm::lib::test {
 class RingBufferFixture : public testing::Test {
  public:
   static constexpr size_t BUFFER_SIZE = 32;
-  RingBuffer<std::uint8_t, BUFFER_SIZE> Buffer;
+  RingBuffer<std::uint8_t> Buffer{BUFFER_SIZE};
 };
 
 TEST_F(RingBufferFixture, ValidateInitialState) {

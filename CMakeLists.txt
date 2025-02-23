@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 
+add_definitions("-DSTATIC_ALLOCATOR_SIZE=4096")
+
 if(DESKTOP)
   add_definitions("-D_WIN32_WINNT=0x0601")
 endif()

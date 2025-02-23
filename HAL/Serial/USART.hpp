@@ -55,29 +55,31 @@ class USART : public IUSART, public Driver<T> {
 
   bool IsRxIdle() const override { return Driver<T>::Device().IsRxIdle(); }
 
-  bool IsTxIdle() const override { return Driver<T>::Device().IsTxIdle(); }
-
-  Result SendBytes(const std::uint8_t* pData, std::size_t size) override {
-    return Driver<T>::Device().SendBytes(pData, size);
+  Result SendBytes(std::span<const std::uint8_t> data) override {
+    return Driver<T>::Device().SendBytes(data);
   }
 
   void SendBytesAsync(
-      const std::uint8_t* pData, std::size_t size,
+      std::span<const std::uint8_t> data,
       std::function<void(const Result&)> completionCallback) override {
-    Driver<T>::Device().SendBytesAsync(pData, size,
-                                       std::move(completionCallback));
+    Driver<T>::Device().SendBytesAsync(data, std::move(completionCallback));
   }
 
-  Result ReceiveBytes(std::uint8_t* pData, std::size_t maxSize,
+  Result ReceiveBytes(std::span<std::uint8_t> buffer,
                       std::uint32_t timeout) override {
-    return Driver<T>::Device().ReceiveBytes(pData, maxSize, timeout);
+    return Driver<T>::Device().ReceiveBytes(buffer, timeout);
   }
 
   void ReceiveBytesAsync(
-      std::uint8_t* pData, std::size_t maxSize, std::uint32_t timeout,
+      std::span<std::uint8_t> buffer, std::uint32_t timeout,
       std::function<void(const Result&)> completionCallback) override {
-    return Driver<T>::Device().ReceiveBytesAsync(pData, maxSize, timeout,
+    return Driver<T>::Device().ReceiveBytesAsync(buffer, timeout,
                                                  std::move(completionCallback));
+  }
+
+  BufferFullSub SubscribeBufferFull(
+      std::function<void(IUSART&)> callback) override {
+    return Driver<T>::Device().SubscribeBufferFull(std::move(callback));
   }
 };
 }  // namespace openstm::hal

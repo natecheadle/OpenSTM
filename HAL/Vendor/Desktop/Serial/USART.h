@@ -3,6 +3,7 @@
 #include <Container/RingBuffer.hpp>
 #include <Event/Event.hpp>
 #include <boost/asio.hpp>
+#include <future>
 #include <span>
 #include <thread>
 
@@ -17,15 +18,15 @@ class USART : public USART_Base {
 
   std::thread m_SerialThread;
 
-  std::future<void> m_TxFuture;
   std::future<void> m_RxFuture;
 
-  lib::RingBuffer<std::uint8_t, USART_BUFFER_SIZE> m_ToReceiveBuffer;
+  lib::RingBuffer<std::uint8_t> m_ToReceiveBuffer;
 
   lib::Event<2, std::uint8_t> m_TxByteSentEvent;
 
  public:
-  USART(PinID txPin, PinID rxPin, std::uint32_t baudRate);
+  USART(PinID txPin, PinID rxPin, std::uint32_t baudRate, size_t txBufferSize,
+        size_t rxBufferSize);
   USART(const USART& other) = delete;
   USART(USART&& other);
 
@@ -34,26 +35,26 @@ class USART : public USART_Base {
   void Initialize() override;
 
   bool IsRxIdle() const override;
-  bool IsTxIdle() const override;
 
-  Result SendBytes(const std::uint8_t* pData, std::size_t size) override;
+  Result SendBytes(std::span<const std::uint8_t> data) override;
 
   void SendBytesAsync(
-      const std::uint8_t* pData, std::size_t size,
+      std::span<const std::uint8_t> data,
       std::function<void(const Result&)> completionCallback) override;
 
-  Result ReceiveBytes(std::uint8_t* pData, std::size_t maxSize,
+  Result ReceiveBytes(std::span<std::uint8_t> buffer,
                       std::uint32_t timeout) override;
 
   void ReceiveBytesAsync(
-      std::uint8_t* pData, std::size_t maxSize, std::uint32_t timeout,
+      std::span<std::uint8_t> buffer, std::uint32_t timeout,
       std::function<void(const Result&)> completionCallback) override;
 
   void InjectReceiveBytes(std::span<std::uint8_t> data);
+
   lib::Event<2, std::uint8_t>::Subscription SubscribeSentByte(
       std::function<void(std::uint8_t)> callback);
 
  private:
-  void SendReceiveNextByte(const boost ::system::error_code& ec);
+  void SendReceiveNextByte(const boost::system::error_code& ec);
 };
 }  // namespace openstm::hal::desktop

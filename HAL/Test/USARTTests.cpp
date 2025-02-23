@@ -6,9 +6,11 @@ class USARTFixture : public testing::Test {
   openstm::lib::Event<2, std::uint8_t>::Subscription m_Sub;
 
  public:
-  USART Serial{PinID::Three, PinID::Four, 9600};
+  USART Serial{PinID::Three, PinID::Four, 9600, 4, 32};
 
   USARTFixture() {
+    openstm::lib::StaticStackAllocator<STATIC_ALLOCATOR_SIZE>::Reset();
+
     Serial.Initialize();
     m_Sub =
         Serial.SubscribeSentByte([this](uint8_t val) { ByteReceived(val); });
@@ -23,7 +25,6 @@ TEST_F(USARTFixture, ValidateInitialState) {
   ASSERT_EQ(Serial.RXPin(), PinID::Four);
   ASSERT_EQ(Serial.BaudRate(), 9600);
   ASSERT_TRUE(Serial.IsRxIdle());
-  ASSERT_TRUE(Serial.IsTxIdle());
 }
 
 TEST_F(USARTFixture, ValidateSendBytes) {
@@ -31,8 +32,8 @@ TEST_F(USARTFixture, ValidateSendBytes) {
   for (std::uint8_t i = 0; i < 16; i++) {
     toSendData.push_back(i);
   }
-  Serial.SendBytes(toSendData.data(), toSendData.size());
-  ASSERT_TRUE(Serial.IsTxIdle());
+  Serial.SendBytes(toSendData);
+
   ASSERT_EQ(SentData, toSendData);
 }
 
@@ -42,12 +43,11 @@ TEST_F(USARTFixture, ValidateSendBytesAsync) {
     toSendData.push_back(i);
   }
   std::atomic<bool> completed{false};
-  Serial.SendBytesAsync(toSendData.data(), toSendData.size(),
+  Serial.SendBytesAsync(toSendData,
                         [&](const IUSART::Result&) { completed = true; });
   while (!completed) {
     std::this_thread::yield();
   }
-  ASSERT_TRUE(Serial.IsTxIdle());
   ASSERT_EQ(SentData, toSendData);
 }
 
@@ -61,7 +61,7 @@ TEST_F(USARTFixture, ValidateReceiveBytes) {
   receivedData.resize(toReceiveData.size());
 
   Serial.InjectReceiveBytes(toReceiveData);
-  Serial.ReceiveBytes(receivedData.data(), receivedData.size(), 100);
+  Serial.ReceiveBytes(receivedData, 100);
   ASSERT_TRUE(Serial.IsRxIdle());
   ASSERT_EQ(toReceiveData, receivedData);
 }
@@ -77,7 +77,7 @@ TEST_F(USARTFixture, ValidateReceiveBytesAsync) {
   std::atomic<bool> completed{false};
 
   Serial.InjectReceiveBytes(toReceiveData);
-  Serial.ReceiveBytesAsync(receivedData.data(), receivedData.size(), 100,
+  Serial.ReceiveBytesAsync(receivedData, 100,
                            [&](const IUSART::Result&) { completed = true; });
   while (!completed) {
     std::this_thread::yield();

@@ -1,28 +1,47 @@
 #pragma once
 
+#include <Allocator/StaticStackAllocator.hpp>
 #include <Container/RingBuffer.hpp>
 #include <bitset>
 
 #include "Serial/IUSART.h"
 
-#ifndef USART_BUFFER_SIZE
-#define USART_BUFFER_SIZE 32
-#endif
-
 namespace openstm::hal {
 
 class USART_Base : public IUSART {
+ protected:
+  struct SendMessage {
+    SendMessage() = default;
+
+    SendMessage(std::span<const std::uint8_t> data,
+                std::function<void(const Result&)> callback)
+        : Data(data), CompletionCallback(callback) {}
+
+    std::span<const std::uint8_t> Data;
+    std::function<void(const Result&)> CompletionCallback;
+
+    size_t SentData{0};
+  };
+
+ private:
   const PinID m_TXPin;
   const PinID m_RXPin;
   const std::uint32_t m_BaudRate;
 
-  lib::RingBuffer<std::uint8_t, USART_BUFFER_SIZE> m_TxBuffer;
-  lib::RingBuffer<std::uint8_t, USART_BUFFER_SIZE> m_RxBuffer;
+  BufferFullEvent m_BufferFullEvent;
+
+  lib::RingBuffer<SendMessage, lib::StaticStackAllocatorT<
+                                   SendMessage, STATIC_ALLOCATOR_SIZE>>
+      m_TxBuffer;
+  lib::RingBuffer<std::uint8_t, lib::StaticStackAllocatorT<
+                                    std::uint8_t, STATIC_ALLOCATOR_SIZE>>
+      m_RxBuffer;
 
   std::bitset<(size_t)ErrorCode::LAST> m_EnabledErrors;
 
  public:
-  USART_Base(PinID txPin, PinID rxPin, std::uint32_t baudRate);
+  USART_Base(PinID txPin, PinID rxPin, std::uint32_t baudRate,
+             size_t txBufferSize, size_t rxBufferSize);
   USART_Base(const USART_Base& other) = delete;
   USART_Base(USART_Base&& other) = default;
 
@@ -43,12 +62,17 @@ class USART_Base : public IUSART {
   void FlushRxBuffer() override;
   void FlushTxBuffer() override;
 
- protected:
-  lib::RingBuffer<std::uint8_t, USART_BUFFER_SIZE>& TxBuffer();
-  lib::RingBuffer<std::uint8_t, USART_BUFFER_SIZE>& RxBuffer();
-  
-  const lib::RingBuffer<std::uint8_t, USART_BUFFER_SIZE>& TxBuffer()const ;
-  const lib::RingBuffer<std::uint8_t, USART_BUFFER_SIZE>& RxBuffer()const;
+  BufferFullSub SubscribeBufferFull(
+      std::function<void(IUSART&)> callback) override;
 
+ protected:
+  size_t RxBufferCount() const;
+
+  bool PopTxBuffer(std::uint8_t& nextByte);
+  bool PopTxBuffer(SendMessage& nextMessage);
+  bool PopRxBuffer(std::uint8_t& nextByte);
+
+  bool PushTxBuffer(const SendMessage& nextMessage);
+  bool PushRxBuffer(std::uint8_t nextByte);
 };
 }  // namespace openstm::hal

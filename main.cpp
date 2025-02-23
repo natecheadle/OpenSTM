@@ -24,14 +24,15 @@ void Update() {
   board::App::USB_USART.DisableAllErrors();
   board::App::USB_USART.EnableError(
       openstm::hal::IUSART::ErrorCode::ReceiveTimeout);
-  board::App::USB_USART.ReceiveBytes(BUFFER.data(), BUFFER.size(), 10);
+  board::App::USB_USART.ReceiveBytes(BUFFER, 10);
 
   auto end = std::find(BUFFER.begin(), BUFFER.end(), 0x00);
   size_t strLen = std ::distance(BUFFER.begin(), end);
   if (strLen == 0) {
     board::App::USB_USART.SendBytes(
-        reinterpret_cast<const std::uint8_t*>(NOTHING.data()), NOTHING.size());
+        {reinterpret_cast<const std::uint8_t*>(NOTHING.data()),
+         NOTHING.size()});
   } else {
-    board::App::USB_USART.SendBytes(BUFFER.data(), strLen);
+    board::App::USB_USART.SendBytes(BUFFER);
   }
 }

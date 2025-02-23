@@ -1,17 +1,17 @@
 #include "USART.h"
 
-#include <atomic>
-#include <future>
-
 namespace openstm::hal::desktop {
 
-USART::USART(PinID txPin, PinID rxPin, std::uint32_t baudRate)
-    : USART_Base(txPin, rxPin, baudRate),
-      m_BackgroundTimer(m_BackgroundContext) {}
+USART::USART(PinID txPin, PinID rxPin, std::uint32_t baudRate,
+             size_t txBufferSize, size_t rxBufferSize)
+    : USART_Base(txPin, rxPin, baudRate, txBufferSize, rxBufferSize),
+      m_BackgroundTimer(m_BackgroundContext),
+      m_ToReceiveBuffer(rxBufferSize) {}
 
 USART::USART(USART&& other)
     : USART_Base(std::forward<USART_Base>(other)),
-      m_BackgroundTimer(m_BackgroundContext) {}
+      m_BackgroundTimer(m_BackgroundContext),
+      m_ToReceiveBuffer(std::move(other.m_ToReceiveBuffer)) {}
 
 USART::~USART() {
   m_BackgroundContext.stop();
@@ -35,66 +35,55 @@ bool USART::IsRxIdle() const {
                                     std::future_status::ready;
 }
 
-bool USART::IsTxIdle() const {
-  return !m_TxFuture.valid() || m_TxFuture.wait_for(std::chrono::seconds(0)) ==
-                                    std::future_status::ready;
-}
-
-IUSART::Result USART::SendBytes(const std::uint8_t* pData, std::size_t size) {
+IUSART::Result USART::SendBytes(std::span<const std::uint8_t> data) {
+  std::atomic<bool> isComplete{false};
   Result rslt{};
-  SendBytesAsync(pData, size, [&](const Result& completionResult) {
+  SendBytesAsync(data, [&](const Result& completionResult) {
+    isComplete = true;
     rslt = completionResult;
   });
-  m_TxFuture.get();
+  while (!isComplete) {
+    std::this_thread::yield();
+  }
+
   return rslt;
 }
 
 void USART::SendBytesAsync(
-    const std::uint8_t* pData, std::size_t size,
+    std::span<const std::uint8_t> data,
     std::function<void(const Result&)> completionCallback) {
-  std::size_t bufferedCount{0};
-  for (size_t i = 0; i < size; ++i) {
-    if (TxBuffer().Push(pData[i])) {
-      bufferedCount++;
+  SendMessage msg{data, std::move(completionCallback)};
+  if (!PushTxBuffer(msg)) {
+    if (msg.CompletionCallback) {
+      msg.CompletionCallback({ErrorCode::BufferFull});
     }
   }
-  m_TxFuture = std::async(std::launch::async, [pData, size, completionCallback,
-                                               bufferedCount, this]() {
-    std::atomic<std::size_t> sentCount{0};
-    auto subscription =
-        SubscribeSentByte([&](std::uint8_t sentByte) { sentCount++; });
-
-    while (sentCount < bufferedCount) {
-      std::this_thread::yield();
-    }
-    completionCallback({sentCount});
-  });
 }
 
-IUSART::Result USART::ReceiveBytes(std::uint8_t* pData, std::size_t maxSize,
+IUSART::Result USART::ReceiveBytes(std::span<std::uint8_t> buffer,
                                    std::uint32_t timeout) {
   Result rslt{};
-  ReceiveBytesAsync(
-      pData, maxSize, timeout,
-      [&](const Result& completionResult) { rslt = completionResult; });
+  ReceiveBytesAsync(buffer, timeout, [&](const Result& completionResult) {
+    rslt = completionResult;
+  });
   m_RxFuture.get();
   return rslt;
 }
 
 void USART::ReceiveBytesAsync(
-    std::uint8_t* pData, std::size_t maxSize, std::uint32_t,
+    std::span<std::uint8_t> buffer, std::uint32_t,
     std::function<void(const Result&)> completionCallback) {
   if (IsRxIdle()) {
-    m_RxFuture = std::async(
-        std::launch::async, [pData, maxSize, completionCallback, this]() {
+    m_RxFuture =
+        std::async(std::launch::async, [buffer, completionCallback, this]() {
           boost::asio::chrono::microseconds waitTime{
               static_cast<long long>(1.0 / BaudRate() * 1e6)};
           std::size_t receivedSize{0};
 
-          while (receivedSize < maxSize) {
+          while (receivedSize < buffer.size()) {
             std::uint8_t nextByte{0x00};
-            if (RxBuffer().Pop(nextByte)) {
-              pData[receivedSize] = nextByte;
+            if (PopRxBuffer(nextByte)) {
+              buffer[receivedSize] = nextByte;
               receivedSize++;
             } else {
               std::this_thread::yield();
@@ -123,11 +112,20 @@ void USART::SendReceiveNextByte(const boost ::system::error_code& ec) {
     return;
   }
   std::uint8_t nextByte{0x00};
-  if (TxBuffer().Pop(nextByte)) {
+  if (PopTxBuffer(nextByte)) {
     m_TxByteSentEvent.Invoke(nextByte);
+  } else {
+    SendMessage nextMsg;
+    if (PopTxBuffer(nextMsg)) {
+      assert(nextMsg.Data.size() == nextMsg.SentData);
+      if (nextMsg.CompletionCallback) {
+        nextMsg.CompletionCallback({nextMsg.SentData});
+      }
+    }
   }
+
   if (m_ToReceiveBuffer.Pop(nextByte)) {
-    RxBuffer().Push(nextByte);
+    PushRxBuffer(nextByte);
   }
   m_BackgroundTimer.expires_at(m_BackgroundTimer.expiry() + m_PerByteTime);
 
