@@ -40,8 +40,8 @@ DigitalIn<stmicro::f3::DigitalIn> App::Button1 =
 SystemTimer<stmicro::f3::SystemTimer> App::SysTimer =
     SystemTimer(stmicro::f3::SystemTimer());
 
-USART<stmicro::f3::USART> App::USB_USART =
-    USART(stmicro::f3::USART(PinID::Two, PinID::Three, GPIOA, USART2, 38400));
+USART<stmicro::f3::USART> App::USB_USART = USART(
+    stmicro::f3::USART(PinID::Two, PinID::Three, GPIOA, USART2, 38400, 4, 32));
 
 App::App(std::function<void()> update) : m_UpdateFunc(update) {}
 

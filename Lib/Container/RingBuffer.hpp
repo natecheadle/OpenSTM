@@ -1,20 +1,18 @@
 #pragma once
 
-#include <array>
 #include <cstddef>
-#include <limits>
+#include <vector>
 
 namespace openstm::lib {
-template <typename T, size_t SIZE>
+template <typename T, typename ALLOCATOR = std::allocator<T>>
 class RingBuffer {
-  static_assert(SIZE > 1, "SIZE must be greater than 1");
-  static_assert(SIZE < std::numeric_limits<size_t>::max(),
-                "SIZE must be less than size_t max");
-  std::array<T, SIZE> m_Data;
+  std::vector<T, ALLOCATOR> m_Data;
   size_t m_Begin{0};
   size_t m_End{0};
 
  public:
+  RingBuffer(size_t size) { m_Data.resize(size); }
+
   bool IsEmpty() const { return m_Begin == m_End; }
   bool IsFull() const {
     if (m_Begin == m_End) {
@@ -28,13 +26,13 @@ class RingBuffer {
 
   void Clear() { m_Begin = m_End; }
 
-  size_t MaxCount() const { return SIZE - 1; }
+  size_t MaxCount() const { return m_Data.size() - 1; }
 
   size_t RemainingSlots() const { return MaxCount() - BufferedCount(); }
 
   size_t BufferedCount() const {
     if (m_End < m_Begin) {
-      return m_End + SIZE - m_Begin;
+      return m_End + m_Data.size() - m_Begin;
     } else {
       return m_End - m_Begin;
     }
@@ -45,6 +43,14 @@ class RingBuffer {
       return false;
     }
     out = m_Data[m_Begin];
+    return true;
+  }
+
+  bool Next(T*& out) {
+    if (IsEmpty()) {
+      return false;
+    }
+    out = &m_Data[m_Begin];
     return true;
   }
 

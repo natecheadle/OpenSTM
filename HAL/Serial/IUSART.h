@@ -1,7 +1,9 @@
 #pragma once
 
+#include <Event/Event.hpp>
 #include <cstdint>
 #include <functional>
+#include <span>
 
 #include "PinID.h"
 
@@ -11,12 +13,13 @@ class IUSART {
  public:
   enum class ErrorCode {
     None = 0,
-    Parity = 1,
-    ReceiveTimeout = 2,
-    Overrun = 3,
-    Framing = 4,
-    NoiseDetected = 5,
-    NotIdle = 6,
+    Parity,
+    ReceiveTimeout,
+    Overrun,
+    Framing,
+    NoiseDetected,
+    NotIdle,
+    BufferFull,
 
     LAST
   };
@@ -32,6 +35,9 @@ class IUSART {
     ErrorCode Error;
     size_t BytesTransmitted;
   };
+
+  using BufferFullEvent = lib::Event<2, IUSART&>;
+  using BufferFullSub = lib::Event<2, IUSART&>::Subscription;
 
   virtual void Initialize() = 0;
 
@@ -52,16 +58,19 @@ class IUSART {
   virtual void FlushTxBuffer() = 0;
 
   virtual bool IsRxIdle() const = 0;
-  virtual bool IsTxIdle() const = 0;
 
-  virtual Result SendBytes(const std::uint8_t* pData, std::size_t size) = 0;
+  virtual Result SendBytes(std::span<const std::uint8_t> data) = 0;
+
   virtual void SendBytesAsync(
-      const std::uint8_t* pData, std::size_t size,
+      std::span<const std::uint8_t> data,
       std::function<void(const Result&)> completionCallback) = 0;
-  virtual Result ReceiveBytes(std::uint8_t* pData, std::size_t maxSize,
+  virtual Result ReceiveBytes(std::span<std::uint8_t> buffer,
                               std::uint32_t timeout) = 0;
   virtual void ReceiveBytesAsync(
-      std::uint8_t* pData, std::size_t maxSize, std::uint32_t timeout,
+      std::span<std::uint8_t> buffer, std::uint32_t timeout,
       std::function<void(const Result&)> completionCallback) = 0;
+
+  virtual BufferFullSub SubscribeBufferFull(
+      std::function<void(IUSART&)> callback) = 0;
 };
 }  // namespace openstm::hal

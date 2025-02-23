@@ -15,8 +15,11 @@ openstm::hal::stmicro::f3::USART* pUSART3 = nullptr;
 
 namespace openstm::hal::stmicro::f3 {
 USART::USART(PinID txPin, PinID rxPin, GPIO_TypeDef* gpiox,
-             USART_TypeDef* usart, std::uint32_t baudRate)
-    : USART_Base(txPin, rxPin, baudRate), m_GPIOx(gpiox), m_USART(usart) {
+             USART_TypeDef* usart, std::uint32_t baudRate, size_t txBufferSize,
+             size_t rxBufferSize)
+    : USART_Base(txPin, rxPin, baudRate, txBufferSize, rxBufferSize),
+      m_GPIOx(gpiox),
+      m_USART(usart) {
   if (m_USART == USART1) {
     pUSART1 = this;
   } else if (m_USART == USART2) {
@@ -40,8 +43,6 @@ USART::USART(USART&& other)
 }
 
 bool USART::IsRxIdle() const { return m_pActiveReceive == nullptr; }
-
-bool USART::IsTxIdle() const { return m_pActiveSend == nullptr; }
 
 void USART::Initialize() {
   LL_USART_InitTypeDef USART_InitStruct = {};
@@ -97,10 +98,10 @@ void USART::Initialize() {
   LL_USART_EnableIT_RXNE(m_USART);
 }
 
-IUSART::Result USART::SendBytes(const std::uint8_t* pData, std::size_t size) {
+IUSART::Result USART::SendBytes(std::span<const std::uint8_t> data) {
   Result rslt{};
   bool isComplete{false};
-  SendBytesAsync(pData, size, [&](Result sendRslt) {
+  SendBytesAsync(data, [&](Result sendRslt) {
     rslt = sendRslt;
     isComplete = true;
   });
@@ -110,40 +111,21 @@ IUSART::Result USART::SendBytes(const std::uint8_t* pData, std::size_t size) {
 }
 
 void USART::SendBytesAsync(
-    const std::uint8_t* pData, std::size_t size,
+    std::span<const std::uint8_t> data,
     std::function<void(const Result&)> completionCallback) {
-  if (m_pActiveSend) {
-    if (completionCallback) {
-      completionCallback({ErrorCode::NotIdle});
-      return;
-    }
+  SendMessage msg{data, std::move(completionCallback)};
+  if (!PushTxBuffer(msg)) {
+    completionCallback({ErrorCode::BufferFull});
   }
-  size_t txSize{0};
-  for (size_t i = 0; i < size; ++i) {
-    if (!TxBuffer().Push(pData[i])) {
-      break;  // for()
-    }
-    ++txSize;
-  }
-
-  if (txSize == 0) {
-    if (completionCallback) {
-      completionCallback({});
-    }
-  }
-
-  m_ActiveSend = SendMessage{
-      .Size = txSize, .Sent = 0, .Callback = std::move(completionCallback)};
-  m_pActiveSend = &m_ActiveSend;
 
   LL_USART_EnableIT_TXE(m_USART);
 }
 
-IUSART::Result USART::ReceiveBytes(std::uint8_t* pData, std::size_t maxSize,
+IUSART::Result USART::ReceiveBytes(std::span<std::uint8_t> buffer,
                                    std::uint32_t timeout) {
   Result rslt;
   bool isComplete{false};
-  ReceiveBytesAsync(pData, maxSize, timeout, [&](Result receiveRslt) {
+  ReceiveBytesAsync(buffer, timeout, [&](Result receiveRslt) {
     rslt = receiveRslt;
     isComplete = true;
   });
@@ -153,7 +135,7 @@ IUSART::Result USART::ReceiveBytes(std::uint8_t* pData, std::size_t maxSize,
 }
 
 void USART::ReceiveBytesAsync(
-    std::uint8_t* pData, std::size_t maxSize, std::uint32_t timeout,
+    std::span<std::uint8_t> buffer, std::uint32_t timeout,
     std::function<void(const Result&)> completionCallback) {
   Result rslt;
 
@@ -164,22 +146,22 @@ void USART::ReceiveBytesAsync(
     }
   }
 
-  if (RxBuffer().BufferedCount() >= maxSize) {
-    for (size_t i = 0; i < maxSize; ++i) {
+  if (RxBufferCount() >= buffer.size()) {
+    for (size_t i = 0; i < buffer.size(); ++i) {
       std::uint8_t next{0};
-      RxBuffer().Pop(next);
-      pData[i] = next;
+      if (PopRxBuffer(next)) {
+        buffer[i] = next;
+      }
     }
     if (completionCallback) {
-      completionCallback({maxSize});
+      completionCallback({buffer.size()});
     }
   }
 
   LL_USART_SetRxTimeout(m_USART, timeout);
   LL_USART_EnableRxTimeout(m_USART);
 
-  m_ActiveReceive = ReceiveMessage{.Buffer = pData,
-                                   .BufferSize = maxSize,
+  m_ActiveReceive = ReceiveMessage{.Buffer = buffer,
                                    .ReceivedSize = 0,
                                    .Callback = std::move(completionCallback)};
   m_pActiveReceive = &m_ActiveReceive;
@@ -246,19 +228,15 @@ void USART::HandleReceiveError(ErrorCode code) {
 
 void USART::TransmitDataEmpty() {
   std::uint8_t nextByte{0};
-  if (TxBuffer().Pop(nextByte)) {
+  if (PopTxBuffer(nextByte)) {
     LL_USART_TransmitData8(m_USART, nextByte);
-    if (m_pActiveSend) {
-      m_pActiveSend->Sent++;
-      if (m_pActiveSend->Sent == m_pActiveSend->Size) {
-        if (m_pActiveSend->Callback) {
-          m_pActiveSend->Callback({m_pActiveSend->Sent});
-        }
-        m_pActiveSend = nullptr;
+  } else {
+    SendMessage nextMsg;
+    if (PopTxBuffer(nextMsg)) {
+      if (nextMsg.CompletionCallback) {
+        nextMsg.CompletionCallback(nextMsg.SentData);
       }
     }
-  }
-  if (TxBuffer().IsEmpty()) {
     LL_USART_DisableIT_TXE(m_USART);
   }
 }
@@ -270,32 +248,31 @@ void USART::TransmissionComplete() {
 
 void USART::ReceiveByte(std::uint8_t nextByte) {
   if (m_pActiveReceive) {
-    while (!RxBuffer().IsEmpty()) {
-      std::uint8_t next{0};
-      if (RxBuffer().Pop(next)) {
-        m_pActiveReceive->Buffer[m_pActiveReceive->ReceivedSize] = next;
-        m_pActiveReceive->ReceivedSize++;
-        if (m_pActiveReceive->ReceivedSize == m_pActiveReceive->BufferSize) {
-          RxBuffer().Push(nextByte);
-          if (m_pActiveReceive->Callback) {
-            m_pActiveReceive->Callback({m_pActiveReceive->BufferSize});
-          }
-          m_pActiveReceive = nullptr;
-          return;
+    std::uint8_t nextBufferByte{0};
+    while (PopRxBuffer(nextBufferByte)) {
+      m_pActiveReceive->Buffer[m_pActiveReceive->ReceivedSize] = nextBufferByte;
+      m_pActiveReceive->ReceivedSize++;
+      if (m_pActiveReceive->ReceivedSize == m_pActiveReceive->Buffer.size()) {
+        PushRxBuffer(nextBufferByte);
+        if (m_pActiveReceive->Callback) {
+          m_pActiveReceive->Callback({m_pActiveReceive->Buffer.size()});
         }
+        m_pActiveReceive = nullptr;
+        return;
       }
     }
     m_pActiveReceive->Buffer[m_pActiveReceive->ReceivedSize] = nextByte;
     m_pActiveReceive->ReceivedSize++;
-    if (m_pActiveReceive->ReceivedSize == m_pActiveReceive->BufferSize) {
+    if (m_pActiveReceive->ReceivedSize == m_pActiveReceive->Buffer.size()) {
+      PushRxBuffer(nextByte);
       if (m_pActiveReceive->Callback) {
-        m_pActiveReceive->Callback({m_pActiveReceive->BufferSize});
+        m_pActiveReceive->Callback({m_pActiveReceive->Buffer.size()});
       }
       m_pActiveReceive = nullptr;
       return;
     }
   } else {
-    RxBuffer().Push(nextByte);
+    PushRxBuffer(nextByte);
   }
 }
 

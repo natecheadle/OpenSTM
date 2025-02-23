@@ -2,8 +2,13 @@
 
 namespace openstm::hal {
 
-USART_Base::USART_Base(PinID txPin, PinID rxPin, std::uint32_t baudRate)
-    : m_TXPin(txPin), m_RXPin(rxPin), m_BaudRate(baudRate) {}
+USART_Base::USART_Base(PinID txPin, PinID rxPin, std::uint32_t baudRate,
+                       size_t txBufferSize, size_t rxBufferSize)
+    : m_TXPin(txPin),
+      m_RXPin(rxPin),
+      m_BaudRate(baudRate),
+      m_TxBuffer(txBufferSize),
+      m_RxBuffer(rxBufferSize) {}
 
 PinID USART_Base::TXPin() const { return m_TXPin; }
 
@@ -39,22 +44,45 @@ void USART_Base::FlushRxBuffer() { m_RxBuffer.Clear(); }
 
 void USART_Base::FlushTxBuffer() { m_TxBuffer.Clear(); }
 
-lib::RingBuffer<std::uint8_t, USART_BUFFER_SIZE>& USART_Base::TxBuffer() {
-  return m_TxBuffer;
+IUSART::BufferFullSub USART_Base::SubscribeBufferFull(
+    std::function<void(IUSART&)> callback) {
+  return m_BufferFullEvent.Subscribe(std::move(callback));
 }
 
-lib::RingBuffer<std::uint8_t, USART_BUFFER_SIZE>& USART_Base::RxBuffer() {
-  return m_RxBuffer;
+size_t USART_Base::RxBufferCount() const { return m_RxBuffer.BufferedCount(); }
+
+bool USART_Base::PopTxBuffer(SendMessage& nextMsg) {
+  return m_TxBuffer.Pop(nextMsg);
 }
 
-const lib::RingBuffer<std::uint8_t, USART_BUFFER_SIZE>& USART_Base::TxBuffer()
-    const {
-  return m_TxBuffer;
+bool USART_Base::PopTxBuffer(std::uint8_t& nextByte) {
+  if (m_TxBuffer.IsEmpty()) {
+    return false;
+  }
+  SendMessage* msg;
+  if (m_TxBuffer.Next(msg) && msg->SentData < msg->Data.size()) {
+    nextByte = msg->Data[msg->SentData];
+    msg->SentData++;
+    return true;
+  }
+  return false;
 }
 
-const lib::RingBuffer<std::uint8_t, USART_BUFFER_SIZE>& USART_Base::RxBuffer()
-    const {
-  return m_RxBuffer;
+bool USART_Base::PopRxBuffer(std::uint8_t& nextByte) {
+  return m_RxBuffer.Pop(nextByte);
+}
+
+bool USART_Base::PushTxBuffer(const SendMessage& nextMessage) {
+  return m_TxBuffer.Push(nextMessage);
+}
+
+bool USART_Base::PushRxBuffer(std::uint8_t nextByte) {
+  if (m_RxBuffer.Push(nextByte)) {
+    return true;
+  }
+
+  m_BufferFullEvent.Invoke(*this);
+  return false;
 }
 
 }  // namespace openstm::hal
