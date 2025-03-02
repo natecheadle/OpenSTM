@@ -51,7 +51,7 @@ class USART_Base : public IUSART {
   PinID RXPin() const override;
   std::uint32_t BaudRate() const override;
   size_t BufferedRxBytes() const override;
-  size_t BufferedTxBytes() const override;
+  size_t BufferedTxMessages() const override;
 
   void EnableError(ErrorCode error) override;
   void EnableAllErrors() override;

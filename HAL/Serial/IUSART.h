@@ -20,6 +20,7 @@ class IUSART {
     NoiseDetected,
     NotIdle,
     BufferFull,
+    DMAError,
 
     LAST
   };
@@ -46,7 +47,7 @@ class IUSART {
   virtual std::uint32_t BaudRate() const = 0;
 
   virtual size_t BufferedRxBytes() const = 0;
-  virtual size_t BufferedTxBytes() const = 0;
+  virtual size_t BufferedTxMessages() const = 0;
 
   virtual void EnableError(ErrorCode error) = 0;
   virtual void EnableAllErrors() = 0;

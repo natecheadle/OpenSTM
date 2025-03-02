@@ -20,7 +20,7 @@ size_t USART_Base::BufferedRxBytes() const {
   return m_RxBuffer.BufferedCount();
 }
 
-size_t USART_Base::BufferedTxBytes() const {
+size_t USART_Base::BufferedTxMessages() const {
   return m_TxBuffer.BufferedCount();
 }
 

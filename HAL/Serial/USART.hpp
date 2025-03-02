@@ -29,8 +29,8 @@ class USART : public IUSART, public Driver<T> {
     return Driver<T>::Device().BufferedRxBytes();
   }
 
-  size_t BufferedTxBytes() const override {
-    return Driver<T>::Device().BufferedTxBytes();
+  size_t BufferedTxMessages() const override {
+    return Driver<T>::Device().BufferedTxMessages();
   }
 
   void EnableError(ErrorCode error) override {
