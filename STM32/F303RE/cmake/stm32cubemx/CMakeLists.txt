@@ -7,16 +7,7 @@ add_library(stm32cubemx INTERFACE)
 enable_language(C ASM)
 
 target_compile_definitions(stm32cubemx INTERFACE 
-	USE_FULL_LL_DRIVER 
-	HSE_VALUE=8000000 
-	HSE_STARTUP_TIMEOUT=100 
-	LSE_STARTUP_TIMEOUT=5000 
-	LSE_VALUE=32768 
-	EXTERNAL_CLOCK_VALUE=8000000 
-	HSI_VALUE=8000000 
-	LSI_VALUE=40000 
-	VDD_VALUE=3300 
-	PREFETCH_ENABLE=1 
+	USE_HAL_DRIVER 
 	STM32F303xE
     $<$<CONFIG:Debug>:DEBUG>
 )
@@ -24,18 +15,42 @@ target_compile_definitions(stm32cubemx INTERFACE
 target_include_directories(stm32cubemx INTERFACE
     ../../Inc
     ../../Drivers/STM32F3xx_HAL_Driver/Inc
+    ../../Drivers/STM32F3xx_HAL_Driver/Inc/Legacy
+    ../../Middlewares/ST/STM32_USB_Device_Library/Core/Inc
+    ../../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Inc
     ../../Drivers/CMSIS/Device/ST/STM32F3xx/Include
     ../../Drivers/CMSIS/Include
 )
 
 target_sources(stm32cubemx INTERFACE
-    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_ll_utils.c
-    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_ll_exti.c
-    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_ll_gpio.c
-    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_ll_usart.c
-    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_ll_rcc.c
-    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_ll_dma.c
+    ../../Src/main.c
+    ../../Src/usb_device.c
+    ../../Src/usbd_conf.c
+    ../../Src/usbd_desc.c
+    ../../Src/usbd_custom_hid_if.c
+    ../../Src/stm32f3xx_it.c
+    ../../Src/stm32f3xx_hal_msp.c
+    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_ll_usb.c
+    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pcd.c
+    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pcd_ex.c
+    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal.c
+    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_rcc.c
+    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_rcc_ex.c
+    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_gpio.c
+    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_dma.c
+    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_cortex.c
+    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pwr.c
+    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_pwr_ex.c
+    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_flash.c
+    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_flash_ex.c
+    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_i2c.c
+    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_i2c_ex.c
+    ../../Drivers/STM32F3xx_HAL_Driver/Src/stm32f3xx_hal_exti.c
     ../../Src/system_stm32f3xx.c
+    ../../Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c
+    ../../Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c
+    ../../Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c
+    ../../Middlewares/ST/STM32_USB_Device_Library/Class/CustomHID/Src/usbd_customhid.c
     ../../Src/sysmem.c
     ../../Src/syscalls.c
     ../../startup_stm32f303xe.s
