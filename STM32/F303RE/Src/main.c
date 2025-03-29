@@ -18,12 +18,14 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "usb_device.h"
 
 #include "usb_device.h"
 #include "usbd_customhid.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "usbd_hid.h"
 
 /* USER CODE END Includes */
 
@@ -43,6 +45,9 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+UART_HandleTypeDef huart2;
+DMA_HandleTypeDef hdma_usart2_rx;
+DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
 
@@ -73,7 +78,18 @@ static void MX_GPIO_Init(void);
  */
 int main(void) {
   /* USER CODE BEGIN 1 */
-
+  // HID Mouse
+  struct mouseHID_t {
+    uint8_t buttons;
+    int8_t x;
+    int8_t y;
+    int8_t wheel;
+  };
+  struct mouseHID_t mouseHID;
+  mouseHID.buttons = 0;
+  mouseHID.x = 10;
+  mouseHID.y = 0;
+  mouseHID.wheel = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
