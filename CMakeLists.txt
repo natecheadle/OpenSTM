@@ -22,7 +22,7 @@ if(EMBEDDED)
   add_subdirectory("Boards")
   add_subdirectory(${PROCESSOR_VENDOR})
 
-  add_executable(${PROJECT_NAME} "main.cpp")
+  add_executable(${PROJECT_NAME} "main.cpp" ${MX_SYS_Src})
   target_link_libraries(${PROJECT_NAME} OpenSTM_BSP)
 
 elseif(DESKTOP)
