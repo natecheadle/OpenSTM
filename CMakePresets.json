@@ -28,9 +28,20 @@
             "name": "F303RE",
             "cacheVariables": {
                 "PROCESSOR_VENDOR": "STM32",
-                "BOARD_NAME": "F303RE"
+                "BOARD_NAME": "F303RE",
+                "PROCESSOR_SERIES": "F3"
             },
             "toolchainFile": "${sourceDir}/STM32/F303RE/cmake/gcc-arm-none-eabi.cmake",
+            "hidden": true
+        },
+        {
+            "name": "F072-DISCO",
+            "cacheVariables": {
+                "PROCESSOR_VENDOR": "STM32",
+                "BOARD_NAME": "F072DISCO",
+                "PROCESSOR_SERIES": "F0"
+            },
+            "toolchainFile": "${sourceDir}/STM32/F072DISCO/cmake/gcc-arm-none-eabi.cmake",
             "hidden": true
         },
         {
@@ -105,6 +116,24 @@
                 "Embedded",
                 "Release",
                 "F303RE"
+            ]
+        },
+        {
+            "name": "F072-DISCO-Debug",
+            "inherits": [
+                "default",
+                "Embedded",
+                "Debug",
+                "F072-DISCO"
+            ]
+        },
+        {
+            "name": "F072-DISCO-Release",
+            "inherits": [
+                "default",
+                "Embedded",
+                "Release",
+                "F072-DISCO"
             ]
         }
     ]

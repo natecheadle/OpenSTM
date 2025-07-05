@@ -1,9 +1,9 @@
 #pragma once
 #include <App.h>
-#include <Vendor/STMicro/F3/IO/DigitalIn.h>
-#include <Vendor/STMicro/F3/IO/DigitalOut.h>
-#include <Vendor/STMicro/F3/Serial/USART.h>
-#include <Vendor/STMicro/F3/Timer/SystemTimer.h>
+#include <Vendor/STM32/F3/IO/DigitalIn.h>
+#include <Vendor/STM32/F3/IO/DigitalOut.h>
+#include <Vendor/STM32/F3/Serial/USART.h>
+#include <Vendor/STM32/F3/Timer/SystemTimer.h>
 
 #include <IO/Digital/DigitalIn.hpp>
 #include <IO/Digital/DigitalOut.hpp>

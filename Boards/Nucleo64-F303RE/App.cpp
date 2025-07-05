@@ -9,7 +9,7 @@
 #include <stm32f3xx_ll_utils.h>
 
 #include "IO/Digital/DigitalOut.hpp"
-#include "Vendor/STMicro/F3/IO/DigitalOut.h"
+#include "Vendor/STM32/F3/IO/DigitalOut.h"
 
 namespace {
 #define NVIC_PRIORITYGROUP_0                                   \

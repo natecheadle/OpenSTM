@@ -18,6 +18,7 @@ add_subdirectory("HAL")
 
 if(EMBEDDED)
   add_compile_definitions(EMBEDDED)
+  add_compile_definitions(${BOARD_NAME})
 
   add_subdirectory("Boards")
   add_subdirectory(${PROCESSOR_VENDOR})

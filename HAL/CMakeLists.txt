@@ -4,13 +4,11 @@ project(OpenSTM_HAL)
 
 if(EMBEDDED)
   set(SOURCES
-      "Vendor/STMicro/F3/IO/DigitalOut.cpp"
-      "Vendor/STMicro/F3/IO/DigitalIn.cpp" "Vendor/STMicro/F3/Serial/USART.cpp"
-      "Vendor/STMicro/F3/Timer/SystemTimer.cpp")
+      "Vendor/${PROCESSOR_VENDOR}/${PROCESSOR_SERIES}/IO/DigitalOut.cpp"
+      "Vendor/${PROCESSOR_VENDOR}/${PROCESSOR_SERIES}/IO/DigitalIn.cpp" "Vendor/${PROCESSOR_VENDOR}/${PROCESSOR_SERIES}/Serial/USART.cpp"
+      "Vendor/${PROCESSOR_VENDOR}/${PROCESSOR_SERIES}/Timer/SystemTimer.cpp")
 elseif(DESKTOP)
- 
   find_package(boost_asio REQUIRED CONFIG)
-
   set(SOURCES
       "Vendor/Desktop/IO/DigitalOut.cpp" "Vendor/Desktop/IO/DigitalIn.cpp"
       "Vendor/Desktop/Serial/USART.cpp" "Vendor/Desktop/Timer/SystemTimer.cpp")

@@ -10,7 +10,8 @@ namespace openstm::lib {
 template <size_t MAX_SIZE>
 class StaticStackAllocator {
   static std::array<std::uint8_t, MAX_SIZE> m_Data;
-  static std::atomic<size_t> m_NextLocation;
+  // static std::atomic<size_t> m_NextLocation;
+  static size_t m_NextLocation;
 
  public:
   StaticStackAllocator() = default;
@@ -25,6 +26,8 @@ class StaticStackAllocator {
   static void* Mallocate(size_t size) {
     void* pObjNew{nullptr};
     size_t currentLoc = m_NextLocation;
+    /*
+    * Some processors don't have atomic exchange need a work around
     do {
       if (currentLoc >= m_Data.size()) {
         return nullptr;
@@ -35,6 +38,15 @@ class StaticStackAllocator {
       pObjNew = m_Data.data() + currentLoc;
     } while (
         !m_NextLocation.compare_exchange_weak(currentLoc, currentLoc + size));
+    */
+    if (currentLoc >= m_Data.size()) {
+      return nullptr;
+    }
+    if (currentLoc + size > m_Data.size()) {
+      return nullptr;
+    }
+    pObjNew = m_Data.data() + currentLoc;
+    m_NextLocation = currentLoc + size;
 
     return pObjNew;
   }
@@ -89,6 +101,11 @@ class StaticStackAllocatorT {
 template <size_t MAX_SIZE>
 std::array<std::uint8_t, MAX_SIZE> StaticStackAllocator<MAX_SIZE>::m_Data = {};
 
+/*
 template <size_t MAX_SIZE>
 std::atomic<size_t> StaticStackAllocator<MAX_SIZE>::m_NextLocation = 0;
+*/
+
+template <size_t MAX_SIZE>
+size_t StaticStackAllocator<MAX_SIZE>::m_NextLocation = 0;
 }  // namespace openstm::lib

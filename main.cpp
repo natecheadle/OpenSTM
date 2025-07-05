@@ -3,14 +3,22 @@
 #include <array>
 #include <string_view>
 
+#ifdef F303RE
 #include "Boards/Nucleo64-F303RE/App.h"
+#elif F072DISCO
+#include "Boards/Nucleo-F072-Discovery/App.h"
+#endif
 
 std::array<std::uint8_t, 64> BUFFER;
 std::string_view NOTHING = "NOTHING RECEIVED\n";
 
 void Update();
 
+#ifdef F303RE
 namespace board = openstm::hal::boards::nucleo64f303re;
+#elif F072DISCO
+namespace board = openstm::hal::boards::nucleof072discovery;
+#endif
 openstm::hal::AppWrapper<board::App> App(board::App([]() { Update(); }));
 
 int main() {
